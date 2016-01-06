@@ -69,13 +69,12 @@ bot.getMe()
  * handle start command
  */
 bot.onText(/\/start/, function(msg) {
-  var chatId = msg.chat.id;
   var fromId = msg.from.id;
 
   logger.info('user: %s, message: sent \'/start\' command', fromId);
 
   if (!isAuthorized(fromId)) {
-    return replyWithError(chatId, i18n.__('notAuthorized'));
+    return replyWithError(fromId, new Error(i18n.__('notAuthorized')));
   }
 
   var response = ['Hello ' + getTelegramName(msg.from) + ', use /q to search'];
@@ -86,22 +85,19 @@ bot.onText(/\/start/, function(msg) {
     'selective': 2,
   };
 
-  bot.sendMessage(chatId, response.join('\n'), opts);
+  bot.sendMessage(fromId, response.join('\n'), opts);
 });
 
 /*
  * on query, select series
  */
 bot.onText(/\/[Qq](uery)? (.+)/, function(msg, match) {
-  var chatId = msg.chat.id;
   var fromId = msg.from.id;
   var seriesName = match[2];
 
-  logger.info('user: %s, message: sent \'/query\' command', fromId);
+  verifyUser(fromId);
 
-  if (!isAuthorized(fromId)) {
-    return replyWithError(chatId, i18n.__('notAuthorized'));
-  }
+  logger.info('user: %s, message: sent \'/query\' command', fromId);
 
   sonarr.get('series/lookup', {
       'term': seriesName
@@ -119,9 +115,7 @@ bot.onText(/\/[Qq](uery)? (.+)/, function(msg, match) {
       var seriesList = [];
       var keyboardList = [];
 
-      if (config.bot.maxResults) {
-        series.length = (series.length > config.bot.maxResults ? config.bot.maxResults : series.length);
-      }
+      series.length = (series.length > config.bot.maxResults ? config.bot.maxResults : series.length);
 
       var response = ['*Found ' + series.length + ' series:*'];
 
@@ -169,10 +163,10 @@ bot.onText(/\/[Qq](uery)? (.+)/, function(msg, match) {
         'selective': 2,
         'reply_markup': JSON.stringify(keyboard),
       };
-      bot.sendMessage(chatId, response.message, opts);
+      bot.sendMessage(fromId, response.message, opts);
     })
     .catch(function(err) {
-      replyWithError(chatId, err);
+      replyWithError(fromId, err);
     });
 });
 
@@ -181,55 +175,54 @@ bot.onText(/\/[Qq](uery)? (.+)/, function(msg, match) {
  sent via the custom keyboard.
  */
 bot.on('message', function(msg) {
-  var chatId = msg.chat.id;
   var fromId = msg.from.id;
   var message = msg.text;
 
+  verifyUser(fromId);
+
   // If the message is a command, ignore it.
   var currentState = cache.get('state' + fromId);
-
   if (message[0] !== '/' || (currentState === state.sonarr.FOLDER && message[0] === '/')) {
-    // make sure the user has privileges
-    if (!isAuthorized(fromId)) {
-      return replyWithError(chatId, i18n.__('notAuthorized'));
-    }
-
     switch (currentState) {
       case state.sonarr.SERIES:
         logger.info('user: %s, message: choose the series %s', fromId, message);
-        handleSeries(chatId, fromId, message);
+        handleSeries(fromId, message);
         break;
       case state.sonarr.PROFILE:
         logger.info('user: %s, message: choose the profile "%s"', fromId, message);
-        handleSeriesProfile(chatId, fromId, message);
+        handleSeriesProfile(fromId, message);
         break;
       case state.sonarr.FOLDER:
         logger.info('user: %s, message: choose the folder "%s"', fromId, message);
-        handleSeriesFolder(chatId, fromId, message);
+        handleSeriesFolder(fromId, message);
         break;
       case state.sonarr.MONITOR:
         logger.info('user: %s, message: choose the monitor type "%s"', fromId, message);
-        handleSeriesMonitor(chatId, fromId, message);
+        handleSeriesMonitor(fromId, message);
         break;
       case state.admin.REVOKE:
+        verifyAdmin(fromId);
         logger.info('user: %s, message: choose to revoke user "%s"', fromId, message);
-        handleRevokeUser(chatId, fromId, message);
+        handleRevokeUser(fromId, message);
         break;
       case state.admin.REVOKE_CONFIRM:
+        verifyAdmin(fromId);
         logger.info('user: %s, message: choose the revoke confirmation "%s"', fromId, message);
-        handleRevokeUserConfirm(chatId, fromId, message);
+        handleRevokeUserConfirm(fromId, message);
         break;
       case state.admin.UNREVOKE:
+        verifyAdmin(fromId);
         logger.info('user: %s, message: choose to unrevoke user "%s"', fromId, message);
-        handleUnRevokeUser(chatId, fromId, message);
+        handleUnRevokeUser(fromId, message);
         break;
       case state.admin.UNREVOKE_CONFIRM:
+        verifyAdmin(fromId);
         logger.info('user: %s, message: choose the unrevoke confirmation "%s"', fromId, message);
-        handleUnRevokeUserConfirm(chatId, fromId, message);
+        handleUnRevokeUserConfirm(fromId, message);
         break;
       default:
         logger.info('user: %s, message: received unknown message "%s"', fromId, message);
-        replyWithError(chatId, 'Unsure what\'s going on, use the `/clear` command and start over.');
+        replyWithError(fromId, new Error('Unsure what\'s going on, use the `/clear` command and start over.'));
     }
   }
 });
@@ -238,7 +231,6 @@ bot.on('message', function(msg) {
  * handle authorization
  */
 bot.onText(/\/auth (.+)/, function(msg, match) {
-  var chatId = msg.chat.id;
   var fromId = msg.from.id;
   var password = match[1];
 
@@ -247,14 +239,14 @@ bot.onText(/\/auth (.+)/, function(msg, match) {
   if (isAuthorized(fromId)) {
     message.push('Already authorized.');
     message.push('Type /start to begin.');
-    return bot.sendMessage(chatId, message.join('\n'));
+    return bot.sendMessage(fromId, message.join('\n'));
   }
 
   // make sure the user is not banned
   if (isRevoked(fromId)) {
     message.push('Your access has been revoked and cannot reauthorize.');
     message.push('Please reach out to the bot owner for support.');
-    return bot.sendMessage(chatId, message.join('\n'));
+    return bot.sendMessage(fromId, message.join('\n'));
   }
 
   if (password === config.bot.password) {
@@ -262,14 +254,14 @@ bot.onText(/\/auth (.+)/, function(msg, match) {
     updateACL();
 
     if (acl.allowedUsers.length === 1) {
-      promptOwnerConfig(chatId, fromId);
+      promptOwnerConfig(fromId);
     }
 
     message.push('You have been authorized.');
     message.push('Type /start to begin.');
-    bot.sendMessage(chatId, message.join('\n'));
+    bot.sendMessage(fromId, message.join('\n'));
   } else {
-    bot.sendMessage(chatId, 'Invalid password.');
+    bot.sendMessage(fromId, 'Invalid password.');
   }
 
   if (config.bot.owner) {
@@ -281,16 +273,9 @@ bot.onText(/\/auth (.+)/, function(msg, match) {
  * handle users
  */
 bot.onText(/\/users/, function(msg) {
-  var chatId = msg.chat.id;
   var fromId = msg.from.id;
 
-  if (isAuthorized(fromId)) {
-    promptOwnerConfig(chatId, fromId);
-  }
-
-  if (config.bot.owner !== fromId) {
-    return replyWithError(chatId, i18n.__('adminOnly'));
-  }
+  verifyAdmin(fromId);
 
   var response = ['*Allowed Users:*'];
   _.forEach(acl.allowedUsers, function(n, key) {
@@ -303,23 +288,16 @@ bot.onText(/\/users/, function(msg) {
     'selective': 2,
   };
 
-  bot.sendMessage(chatId, response.join('\n'), opts);
+  bot.sendMessage(fromId, response.join('\n'), opts);
 });
 
 /*
  * handle user access revocation
  */
 bot.onText(/\/revoke/, function(msg) {
-  var chatId = msg.chat.id;
   var fromId = msg.from.id;
 
-  if (isAuthorized(fromId)) {
-    promptOwnerConfig(chatId, fromId);
-  }
-
-  if (config.bot.owner !== fromId) {
-    return replyWithError(chatId, i18n.__('adminOnly'));
-  }
+  verifyAdmin(fromId);
 
   var opts = {};
 
@@ -330,7 +308,7 @@ bot.onText(/\/revoke/, function(msg) {
       'parse_mode': 'Markdown',
       'selective': 2,
     };
-    bot.sendMessage(chatId, message, opts);
+    bot.sendMessage(fromId, message, opts);
   }
 
   var keyboardList = [];
@@ -373,23 +351,16 @@ bot.onText(/\/revoke/, function(msg) {
     'selective': 2,
     'reply_markup': JSON.stringify(keyboard),
   };
-  bot.sendMessage(chatId, response.join('\n'), opts);
+  bot.sendMessage(fromId, response.join('\n'), opts);
 });
 
 /*
  * handle user access unrevocation
  */
 bot.onText(/\/unrevoke/, function(msg) {
-  var chatId = msg.chat.id;
   var fromId = msg.from.id;
 
-  if (isAuthorized(fromId)) {
-    promptOwnerConfig(chatId, fromId);
-  }
-
-  if (config.bot.owner !== fromId) {
-    return replyWithError(chatId, i18n.__('adminOnly'));
-  }
+  verifyAdmin(fromId);
 
   var opts = {};
 
@@ -400,7 +371,7 @@ bot.onText(/\/unrevoke/, function(msg) {
       'parse_mode': 'Markdown',
       'selective': 2,
     };
-    bot.sendMessage(chatId, message, opts);
+    bot.sendMessage(fromId, message, opts);
   }
 
   var keyboardList = [];
@@ -443,7 +414,7 @@ bot.onText(/\/unrevoke/, function(msg) {
     'selective': 2,
     'reply_markup': JSON.stringify(keyboard),
   };
-  bot.sendMessage(chatId, response.join('\n'), opts);
+  bot.sendMessage(fromId, response.join('\n'), opts);
 });
 
 
@@ -451,24 +422,21 @@ bot.onText(/\/unrevoke/, function(msg) {
  * handle rss sync
  */
 bot.onText(/\/rss/, function(msg) {
-  var chatId = msg.chat.id;
   var fromId = msg.from.id;
 
-  logger.info('user: %s, message: sent \'/rss\' command', fromId);
+  verifyAdmin(fromId);
 
-  if (config.bot.owner !== fromId) {
-    return replyWithError(chatId, 'Only the owner can issue RSS Sync.');
-  }
+  logger.info('user: %s, message: sent \'/rss\' command', fromId);
 
   sonarr.post('command', {
       'name': 'RssSync'
     })
     .then(function() {
       logger.info('user: %s, message: \'/rss\' command successfully executed', fromId);
-      bot.sendMessage(chatId, 'RSS Sync command sent.');
+      bot.sendMessage(fromId, 'RSS Sync command sent.');
     })
     .catch(function(err) {
-      replyWithError(chatId, err);
+      replyWithError(fromId, err);
     });
 });
 
@@ -476,24 +444,21 @@ bot.onText(/\/rss/, function(msg) {
  * handle refresh series
  */
 bot.onText(/\/refresh/, function(msg) {
-  var chatId = msg.chat.id;
   var fromId = msg.from.id;
 
-  logger.info('user: %s, message: sent \'/refresh\' command', fromId);
+  verifyAdmin(fromId);
 
-  if (config.bot.owner !== fromId) {
-    return replyWithError(chatId, 'Only the owner can refresh series.');
-  }
+  logger.info('user: %s, message: sent \'/refresh\' command', fromId);
 
   sonarr.post('command', {
       'name': 'RefreshSeries'
     })
     .then(function() {
       logger.info('user: %s, message: \'/refresh\' command successfully executed', fromId);
-      bot.sendMessage(chatId, 'Refresh series command sent.');
+      bot.sendMessage(fromId, 'Refresh series command sent.');
     })
     .catch(function(err) {
-      replyWithError(chatId, err);
+      replyWithError(fromId, err);
     });
 });
 
@@ -501,28 +466,25 @@ bot.onText(/\/refresh/, function(msg) {
  * handle clear command
  */
 bot.onText(/\/clear/, function(msg) {
-  var chatId = msg.chat.id;
   var fromId = msg.from.id;
+
+  verifyUser(fromId);
 
   logger.info('user: %s, message: sent \'/clear\' command', fromId);
 
-  if (!isAuthorized(fromId)) {
-    return replyWithError(chatId, i18n.__('notAuthorized'));
-  }
+  clearCache(fromId);
 
   logger.info('user: %s, message: \'/clear\' command successfully executed', fromId);
 
-  clearCache(fromId);
-
-  bot.sendMessage(chatId, 'All previously sent commands have been cleared, yey!', {
+  bot.sendMessage(fromId, 'All previously sent commands have been cleared, yey!', {
     'reply_markup': {
       'hide_keyboard': true
     }
   });
 });
 
-function handleSeries(chatId, fromId, seriesDisplayName) {
-  var seriesList = cache.get('seriesList' + fromId);
+function handleSeries(userId, seriesDisplayName) {
+  var seriesList = cache.get('seriesList' + userId);
   if (seriesList === undefined) {
     throw new Error('something went wrong, try searching again');
   }
@@ -537,7 +499,7 @@ function handleSeries(chatId, fromId, seriesDisplayName) {
 
   var seriesId = series.id;
 
-  cache.set('seriesId' + fromId, seriesId);
+  cache.set('seriesId' + userId, seriesId);
 
   sonarr.get('profile')
     .then(function(result) {
@@ -545,14 +507,14 @@ function handleSeries(chatId, fromId, seriesDisplayName) {
         throw new Error('could not get profiles, try searching again');
       }
 
-      if (cache.get('seriesList' + fromId) === undefined) {
+      if (cache.get('seriesList' + userId) === undefined) {
         throw new Error('could not get previous series list, try searching again');
       }
 
       return result;
     })
     .then(function(profiles) {
-      logger.info('user: %s, message: requested to get profile list', fromId);
+      logger.info('user: %s, message: requested to get profile list', userId);
 
       var profileList = [];
       var keyboardList = [];
@@ -583,11 +545,11 @@ function handleSeries(chatId, fromId, seriesDisplayName) {
       }
       response.push(i18n.__('selectFromMenu'));
 
-      logger.info('user: %s, message: found the following profiles %s', fromId, keyboardList.join(', '));
+      logger.info('user: %s, message: found the following profiles %s', userId, keyboardList.join(', '));
 
       // set cache
-      cache.set('seriesProfileList' + fromId, profileList);
-      cache.set('state' + fromId, state.sonarr.PROFILE);
+      cache.set('seriesProfileList' + userId, profileList);
+      cache.set('state' + userId, state.sonarr.PROFILE);
 
       return new Response(response.join('\n'), keyboardList);
     })
@@ -602,15 +564,15 @@ function handleSeries(chatId, fromId, seriesDisplayName) {
         'selective': 2,
         'reply_markup': JSON.stringify(keyboard),
       };
-      bot.sendMessage(chatId, response.message, opts);
+      bot.sendMessage(userId, response.message, opts);
     })
     .catch(function(err) {
-      replyWithError(chatId, err);
+      replyWithError(userId, err);
     });
 }
 
-function handleSeriesProfile(chatId, fromId, profileName) {
-  var profileList = cache.get('seriesProfileList' + fromId);
+function handleSeriesProfile(userId, profileName) {
+  var profileList = cache.get('seriesProfileList' + userId);
   if (profileList === undefined) {
     throw new Error('something went wrong, try searching again');
   }
@@ -624,7 +586,7 @@ function handleSeriesProfile(chatId, fromId, profileName) {
   }
 
   // set series option to cache
-  cache.set('seriesProfileId' + fromId, profile.id);
+  cache.set('seriesProfileId' + userId, profile.id);
 
   sonarr.get('rootfolder')
     .then(function(result) {
@@ -632,13 +594,13 @@ function handleSeriesProfile(chatId, fromId, profileName) {
         throw new Error('could not get folders, try searching again');
       }
 
-      if (cache.get('seriesList' + fromId) === undefined) {
+      if (cache.get('seriesList' + userId) === undefined) {
         throw new Error('could not get previous list, try searching again');
       }
       return result;
     })
     .then(function(folders) {
-      logger.info('user: %s, message: requested to get folder list', fromId);
+      logger.info('user: %s, message: requested to get folder list', userId);
 
       var folderList = [];
       var keyboardList = [];
@@ -656,11 +618,11 @@ function handleSeriesProfile(chatId, fromId, profileName) {
       });
       response.push(i18n.__('selectFromMenu'));
 
-      logger.info('user: %s, message: found the following folders %s', fromId, keyboardList.join(', '));
+      logger.info('user: %s, message: found the following folders %s', userId, keyboardList.join(', '));
 
       // set cache
-      cache.set('seriesFolderList' + fromId, folderList);
-      cache.set('state' + fromId, state.sonarr.FOLDER);
+      cache.set('seriesFolderList' + userId, folderList);
+      cache.set('state' + userId, state.sonarr.FOLDER);
 
       return new Response(response.join('\n'), keyboardList);
     })
@@ -675,20 +637,20 @@ function handleSeriesProfile(chatId, fromId, profileName) {
         'selective': 2,
         'reply_markup': JSON.stringify(keyboard),
       };
-      bot.sendMessage(chatId, response.message, opts);
+      bot.sendMessage(userId, response.message, opts);
     })
     .catch(function(err) {
-      replyWithError(chatId, err);
+      replyWithError(userId, err);
     });
 }
 
-function handleSeriesFolder(chatId, fromId, folderName) {
-  var seriesId = cache.get('seriesId' + fromId);
-  var seriesList = cache.get('seriesList' + fromId);
-  var folderList = cache.get('seriesFolderList' + fromId);
+function handleSeriesFolder(userId, folderName) {
+  var seriesId = cache.get('seriesId' + userId);
+  var seriesList = cache.get('seriesList' + userId);
+  var folderList = cache.get('seriesFolderList' + userId);
 
   if (seriesList === undefined || seriesId === undefined || folderList === undefined) {
-    return replyWithError(chatId, 'Something went wrong, try searching again');
+    return replyWithError(userId, new Error('Something went wrong, try searching again'));
   }
 
   var folder = _.filter(folderList, function(item) {
@@ -696,9 +658,9 @@ function handleSeriesFolder(chatId, fromId, folderName) {
   })[0];
 
   // set movie option to cache
-  cache.set('seriesFolderId' + fromId, folder.folderId);
+  cache.set('seriesFolderId' + userId, folder.folderId);
 
-  logger.info('user: %s, message: requested to get monitor list', fromId);
+  logger.info('user: %s, message: requested to get monitor list', userId);
 
   var monitor = ['future', 'all', 'none', 'latest', 'first'];
   var monitorList = [];
@@ -726,11 +688,11 @@ function handleSeriesFolder(chatId, fromId, folderName) {
 
   response.push(i18n.__('selectFromMenu'));
 
-  logger.info('user: %s, message: found the following monitor types %s', fromId, keyboardList.join(', '));
+  logger.info('user: %s, message: found the following monitor types %s', userId, keyboardList.join(', '));
 
   // set cache
-  cache.set('seriesMonitorList' + fromId, monitorList);
-  cache.set('state' + fromId, state.sonarr.MONITOR);
+  cache.set('seriesMonitorList' + userId, monitorList);
+  cache.set('state' + userId, state.sonarr.MONITOR);
 
   var keyboard = {
     keyboard: keyboardList,
@@ -742,17 +704,17 @@ function handleSeriesFolder(chatId, fromId, folderName) {
     'selective': 2,
     'reply_markup': JSON.stringify(keyboard),
   };
-  bot.sendMessage(chatId, response.join('\n'), opts);
+  bot.sendMessage(userId, response.join('\n'), opts);
 }
 
-function handleSeriesMonitor(chatId, fromId, monitorType) {
-  var seriesId = cache.get('seriesId' + fromId);
-  var seriesList = cache.get('seriesList' + fromId);
-  var profileId = cache.get('seriesProfileId' + fromId);
-  var profileList = cache.get('seriesProfileList' + fromId);
-  var folderId = cache.get('seriesFolderId' + fromId);
-  var folderList = cache.get('seriesFolderList' + fromId);
-  var monitorList = cache.get('seriesMonitorList' + fromId);
+function handleSeriesMonitor(userId, monitorType) {
+  var seriesId = cache.get('seriesId' + userId);
+  var seriesList = cache.get('seriesList' + userId);
+  var profileId = cache.get('seriesProfileId' + userId);
+  var profileList = cache.get('seriesProfileList' + userId);
+  var folderId = cache.get('seriesFolderId' + userId);
+  var folderList = cache.get('seriesFolderList' + userId);
+  var monitorList = cache.get('seriesMonitorList' + userId);
 
   if (folderList === undefined || profileList === undefined || seriesList === undefined || monitorList === undefined) {
     throw new Error('something went wrong, try searching again');
@@ -836,37 +798,30 @@ function handleSeriesMonitor(chatId, fromId, monitorType) {
   // update seasons to be monitored
   postOpts.seasons = series.seasons;
 
-  logger.info('user: %s, message: adding series "%s" with options %s', fromId, series.title, JSON.stringify(postOpts));
+  logger.info('user: %s, message: adding series "%s" with options %s', userId, series.title, JSON.stringify(postOpts));
 
   sonarr.post('series', postOpts)
     .then(function(result) {
-      logger.info('user: %s, message: added series "%s"', fromId, series.title);
+      logger.info('user: %s, message: added series "%s"', userId, series.title);
 
       if (!result) {
         throw new Error('could not add series, try searching again.');
       }
 
-      bot.sendMessage(chatId, 'Series `' + series.title + '` added', {
+      bot.sendMessage(userId, 'Series `' + series.title + '` added', {
         'selective': 2,
         'parse_mode': 'Markdown'
       });
     })
     .catch(function(err) {
-      replyWithError(chatId, err);
+      replyWithError(userId, err);
     })
     .finally(function() {
-      clearCache(fromId);
+      clearCache(userId);
     });
 }
 
-function handleRevokeUser(chatId, fromId, revokedUser) {
-  if (isAuthorized(fromId)) {
-    promptOwnerConfig(chatId, fromId);
-  }
-
-  if (config.bot.owner !== fromId) {
-    return replyWithError(chatId, i18n.__('adminOnly'));
-  }
+function handleRevokeUser(userId, revokedUser) {
 
   var keyboardList = [];
   var response = ['Are you sure you want to revoke access to ' + revokedUser + '?'];
@@ -874,10 +829,10 @@ function handleRevokeUser(chatId, fromId, revokedUser) {
   keyboardList.push(['yes']);
 
   // set cache
-  cache.set('state' + fromId, state.admin.REVOKE_CONFIRM);
-  cache.set('revokedUserName' + fromId, revokedUser);
+  cache.set('state' + userId, state.admin.REVOKE_CONFIRM);
+  cache.set('revokedUserName' + userId, revokedUser);
 
-  logger.info('user: %s, message: selected revoke user %s', fromId, revokedUser);
+  logger.info('user: %s, message: selected revoke user %s', userId, revokedUser);
 
   var keyboard = {
     keyboard: keyboardList,
@@ -889,34 +844,27 @@ function handleRevokeUser(chatId, fromId, revokedUser) {
     'selective': 2,
     'reply_markup': JSON.stringify(keyboard),
   };
-  bot.sendMessage(chatId, response.join('\n'), opts);
+  bot.sendMessage(userId, response.join('\n'), opts);
 }
 
-function handleRevokeUserConfirm(chatId, fromId, revokedConfirm) {
-  if (isAuthorized(fromId)) {
-    promptOwnerConfig(chatId, fromId);
-  }
+function handleRevokeUserConfirm(userId, revokedConfirm) {
 
-  if (config.bot.owner !== fromId) {
-    return replyWithError(chatId, i18n.__('adminOnly'));
-  }
+  logger.info('user: %s, message: selected revoke confirmation %s', userId, revokedConfirm);
 
-  logger.info('user: %s, message: selected revoke confirmation %s', fromId, revokedConfirm);
-
-  var revokedUser = cache.get('revokedUserName' + fromId);
+  var revokedUser = cache.get('revokedUserName' + userId);
   var opts = {};
   var message = '';
   if (revokedConfirm === 'NO' || revokedConfirm === 'no') {
-      clearCache(fromId);
+      clearCache(userId);
       message = 'Access for ' + revokedUser + ' has *NOT* been revoked.';
       opts = {
         'disable_web_page_preview': true,
          'parse_mode': 'Markdown',
         'selective': 2,
       };
-      return bot.sendMessage(chatId, message, opts);
+      return bot.sendMessage(userId, message, opts);
   }
-  var revokedUserList = cache.get('revokeUserList' + fromId);
+  var revokedUserList = cache.get('revokeUserList' + userId);
   var i = revokedUserList.map(function(e) { return e.keyboardValue; }).indexOf(revokedUser);
   var revokedUserObj = revokedUserList[i];
   var j = acl.allowedUsers.map(function(e) { return e.id; }).indexOf(revokedUserObj.userId);
@@ -931,18 +879,11 @@ function handleRevokeUserConfirm(chatId, fromId, revokedConfirm) {
     'parse_mode': 'Markdown',
     'selective': 2,
   };
-  bot.sendMessage(chatId, message, opts);
-  clearCache(fromId);
+  bot.sendMessage(userId, message, opts);
+  clearCache(userId);
 }
 
-function handleUnRevokeUser(chatId, fromId, revokedUser) {
-  if (isAuthorized(fromId)) {
-    promptOwnerConfig(chatId, fromId);
-  }
-
-  if (config.bot.owner !== fromId) {
-    return replyWithError(chatId, i18n.__('adminOnly'));
-  }
+function handleUnRevokeUser(userId, revokedUser) {
 
   var keyboardList = [];
   var response = ['Are you sure you want to unrevoke access for ' + revokedUser + '?'];
@@ -950,10 +891,10 @@ function handleUnRevokeUser(chatId, fromId, revokedUser) {
   keyboardList.push(['yes']);
 
   // set cache
-  cache.set('state' + fromId, state.admin.UNREVOKE_CONFIRM);
-  cache.set('revokedUserName' + fromId, revokedUser);
+  cache.set('state' + userId, state.admin.UNREVOKE_CONFIRM);
+  cache.set('revokedUserName' + userId, revokedUser);
 
-  logger.info('user: %s, message: selected unrevoke user %s', fromId, revokedUser);
+  logger.info('user: %s, message: selected unrevoke user %s', userId, revokedUser);
 
   var keyboard = {
     keyboard: keyboardList,
@@ -965,35 +906,28 @@ function handleUnRevokeUser(chatId, fromId, revokedUser) {
     'selective': 2,
     'reply_markup': JSON.stringify(keyboard),
   };
-  bot.sendMessage(chatId, response.join('\n'), opts);
+  bot.sendMessage(userId, response.join('\n'), opts);
 }
 
-function handleUnRevokeUserConfirm(chatId, fromId, revokedConfirm) {
-  if (isAuthorized(fromId)) {
-    promptOwnerConfig(chatId, fromId);
-  }
+function handleUnRevokeUserConfirm(userId, revokedConfirm) {
 
-  if (config.bot.owner !== fromId) {
-    return replyWithError(chatId, i18n.__('adminOnly'));
-  }
+  logger.info('user: %s, message: selected unrevoke confirmation %s', userId, revokedConfirm);
 
-  logger.info('user: %s, message: selected unrevoke confirmation %s', fromId, revokedConfirm);
-
-  var revokedUser = cache.get('revokedUserName' + fromId);
+  var revokedUser = cache.get('revokedUserName' + userId);
   var opts = {};
   var message = '';
   if (revokedConfirm === 'NO' || revokedConfirm === 'no') {
-      clearCache(fromId);
+      clearCache(userId);
       message = 'Access for ' + revokedUser + ' has *NOT* been unrevoked.';
       opts = {
         'disable_web_page_preview': true,
          'parse_mode': 'Markdown',
         'selective': 2,
       };
-      return bot.sendMessage(chatId, message, opts);
+      return bot.sendMessage(userId, message, opts);
   }
 
-  var unrevokedUserList = cache.get('unrevokeUserList' + fromId);
+  var unrevokedUserList = cache.get('unrevokeUserList' + userId);
   var i = unrevokedUserList.map(function(e) { return e.keyboardValue; }).indexOf(revokedUser);
   var unrevokedUserObj = unrevokedUserList[i];
   var j = acl.revokedUsers.map(function(e) { return e.id; }).indexOf(unrevokedUserObj.userId);
@@ -1006,8 +940,8 @@ function handleUnRevokeUserConfirm(chatId, fromId, revokedConfirm) {
     'parse_mode': 'Markdown',
     'selective': 2,
   };
-  bot.sendMessage(chatId, message, opts);
-  clearCache(fromId);
+  bot.sendMessage(userId, message, opts);
+  clearCache(userId);
 }
 
 /*
@@ -1021,6 +955,28 @@ function updateACL() {
 
     logger.info('the access control list was updated!');
   });
+}
+
+/*
+ * verify user can use the bot
+ */
+function verifyUser(userId) {
+  if (_.some(acl.allowedUsers, { 'id': userId }) !== true) {
+    return replyWithError(userId, new Error(i18n.__('notAuthorized')));
+  }
+}
+
+/*
+ * verify admin of the bot
+ */
+function verifyAdmin(userId) {
+  if (isAuthorized(userId)) {
+    promptOwnerConfig(userId);
+  }
+
+  if (config.bot.owner !== userId) {
+    return replyWithError(userId, new Error(i18n.__('adminOnly')));
+  }
 }
 
 /*
@@ -1039,23 +995,23 @@ function isRevoked(userId) {
   return _.some(acl.revokedUsers, { 'id': userId });
 }
 
-function promptOwnerConfig(chatId, fromId) {
+function promptOwnerConfig(userId) {
   if (config.bot.owner === 0) {
-    var message = ['Your User ID: ' + fromId];
+    var message = ['Your User ID: ' + userId];
     message.push('Please add your User ID to the config file field labeled \'owner\'.');
     message.push('Please restart the bot once this has been updated.');
-    bot.sendMessage(chatId, message.join('\n'));
+    bot.sendMessage(userId, message.join('\n'));
   }
 }
 
 /*
  * handle removing the custom keyboard
  */
-function replyWithError(chatId, err) {
+function replyWithError(userId, err) {
 
-  logger.warn('user: %s message: %s', chatId, err.replace('\n', ' '));
+  logger.warn('user: %s message: %s', userId, err.message);
 
-  bot.sendMessage(chatId, 'Oh no! ' + err, {
+  bot.sendMessage(userId, 'Oh no! ' + err, {
     'parse_mode': 'Markdown',
     'reply_markup': {
       'hide_keyboard': false
@@ -1066,17 +1022,17 @@ function replyWithError(chatId, err) {
 /*
  * clear caches
  */
-function clearCache(fromId) {
-  cache.del('seriesId' + fromId);
-  cache.del('seriesList' + fromId);
-  cache.del('seriesProfileId' + fromId);
-  cache.del('seriesProfileList' + fromId);
-  cache.del('seriesFolderId' + fromId);
-  cache.del('seriesFolderList' + fromId);
-  cache.del('seriesMonitorList' + fromId);
-  cache.del('state' + fromId);
-  cache.del('revokedUserName' + fromId);
-  cache.del('revokeUserList' + fromId);
+function clearCache(userId) {
+  var cacheItems = [
+    'seriesId', 'seriesList', 'seriesProfileId',
+    'seriesProfileList', 'seriesFolderId',
+    'seriesFolderList', 'seriesMonitorList',
+    'state', 'revokedUserName', 'revokeUserList'
+  ];
+
+  _(cacheItems).forEach(function(item) {
+    cache.del(item + userId);
+  });
 }
 
 /*

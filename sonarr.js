@@ -71,11 +71,9 @@ bot.getMe()
 bot.onText(/\/start/, function(msg) {
   var fromId = msg.from.id;
 
-  logger.info('user: %s, message: sent \'/start\' command', fromId);
+  verifyUser(fromId);
 
-  if (!isAuthorized(fromId)) {
-    return replyWithError(fromId, new Error(i18n.__('notAuthorized')));
-  }
+  logger.info('user: %s, message: sent \'/start\' command', fromId);
 
   var response = ['Hello ' + getTelegramName(msg.from) + ', use /q to search'];
   response.push('\n`/q [series name]` to continue...');
@@ -180,8 +178,9 @@ bot.on('message', function(msg) {
 
   verifyUser(fromId);
 
-  // If the message is a command, ignore it.
   var currentState = cache.get('state' + fromId);
+
+  // If the message is a command, ignore it.
   if (message[0] !== '/' || (currentState === state.sonarr.FOLDER && message[0] === '/')) {
     switch (currentState) {
       case state.sonarr.SERIES:
@@ -249,20 +248,20 @@ bot.onText(/\/auth (.+)/, function(msg, match) {
     return bot.sendMessage(fromId, message.join('\n'));
   }
 
-  if (password === config.bot.password) {
-    acl.allowedUsers.push(msg.from);
-    updateACL();
-
-    if (acl.allowedUsers.length === 1) {
-      promptOwnerConfig(fromId);
-    }
-
-    message.push('You have been authorized.');
-    message.push('Type /start to begin.');
-    bot.sendMessage(fromId, message.join('\n'));
-  } else {
-    bot.sendMessage(fromId, 'Invalid password.');
+  if (password !== config.bot.password) {
+    return replyWithError(fromId, new Error('Invalid password.'));
   }
+
+  acl.allowedUsers.push(msg.from);
+  updateACL();
+
+  if (acl.allowedUsers.length === 1) {
+    promptOwnerConfig(fromId);
+  }
+
+  message.push('You have been authorized.');
+  message.push('Type /start to begin.');
+  bot.sendMessage(fromId, message.join('\n'));
 
   if (config.bot.owner) {
     bot.sendMessage(config.bot.owner, getTelegramName(msg.from) + ' has been granted access.');
@@ -301,7 +300,7 @@ bot.onText(/\/revoke/, function(msg) {
 
   var opts = {};
 
-  if (acl.allowedUsers.length === 0) {
+  if (!acl.allowedUsers.length) {
     var message = 'There aren\'t any allowed users.';
     opts = {
       'disable_web_page_preview': true,
@@ -324,7 +323,7 @@ bot.onText(/\/revoke/, function(msg) {
     response.push('*' + (key + 1) + '*) ' + getTelegramName(n));
 
     keyboardRow.push(getTelegramName(n));
-    if (keyboardRow.length == 2) {
+    if (keyboardRow.length === 2) {
       keyboardList.push(keyboardRow);
       keyboardRow = [];
     }
@@ -333,7 +332,7 @@ bot.onText(/\/revoke/, function(msg) {
   response.push(i18n.__('selectFromMenu'));
 
 
-  if (keyboardRow.length == 1) {
+  if (keyboardRow.length === 1) {
     keyboardList.push([keyboardRow[0]]);
   }
 
@@ -364,7 +363,7 @@ bot.onText(/\/unrevoke/, function(msg) {
 
   var opts = {};
 
-  if (acl.revokedUsers.length === 0) {
+  if (!acl.revokedUsers.length) {
     var message = 'There aren\'t any revoked users.';
     opts = {
       'disable_web_page_preview': true,
@@ -471,9 +470,7 @@ bot.onText(/\/clear/, function(msg) {
   verifyUser(fromId);
 
   logger.info('user: %s, message: sent \'/clear\' command', fromId);
-
   clearCache(fromId);
-
   logger.info('user: %s, message: \'/clear\' command successfully executed', fromId);
 
   bot.sendMessage(fromId, 'All previously sent commands have been cleared, yey!', {
@@ -485,30 +482,25 @@ bot.onText(/\/clear/, function(msg) {
 
 function handleSeries(userId, seriesDisplayName) {
   var seriesList = cache.get('seriesList' + userId);
-  if (seriesList === undefined) {
-    throw new Error('something went wrong, try searching again');
+
+  if (!seriesList) {
+    return replyWithError(userId, new Error('Something went wrong, try searching again'));
   }
 
-  var series = _.filter(seriesList, function(item) {
-    return item.keyboardValue == seriesDisplayName;
-  })[0];
-
-  if (series === undefined) {
-    throw new Error('could not find the series with title ' + seriesDisplayName);
+  var series = _.filter(seriesList, function(item) { return item.keyboardValue === seriesDisplayName; })[0];
+  if (!series) {
+    return replyWithError(userId, new Error('Could not find the series with title ' + seriesDisplayName));
   }
 
   var seriesId = series.id;
 
+  // set cache
   cache.set('seriesId' + userId, seriesId);
 
   sonarr.get('profile')
     .then(function(result) {
       if (!result.length) {
-        throw new Error('could not get profiles, try searching again');
-      }
-
-      if (cache.get('seriesList' + userId) === undefined) {
-        throw new Error('could not get previous series list, try searching again');
+        throw new Error('Could not get profiles, try searching again');
       }
 
       return result;
@@ -540,12 +532,12 @@ function handleSeries(userId, seriesDisplayName) {
         }
       });
 
-      if (keyboardRow.length == 1) {
+      if (keyboardRow.length === 1) {
         keyboardList.push([keyboardRow[0]]);
       }
       response.push(i18n.__('selectFromMenu'));
 
-      logger.info('user: %s, message: found the following profiles %s', userId, keyboardList.join(', '));
+      logger.info('user: %s, message: found the following profiles %s', userId, keyboardList.join(','));
 
       // set cache
       cache.set('seriesProfileList' + userId, profileList);
@@ -558,12 +550,14 @@ function handleSeries(userId, seriesDisplayName) {
         keyboard: response.keyboard,
         one_time_keyboard: true
       };
+
       var opts = {
         'disable_web_page_preview': true,
         'parse_mode': 'Markdown',
         'selective': 2,
         'reply_markup': JSON.stringify(keyboard),
       };
+
       bot.sendMessage(userId, response.message, opts);
     })
     .catch(function(err) {
@@ -572,17 +566,20 @@ function handleSeries(userId, seriesDisplayName) {
 }
 
 function handleSeriesProfile(userId, profileName) {
-  var profileList = cache.get('seriesProfileList' + userId);
-  if (profileList === undefined) {
-    throw new Error('something went wrong, try searching again');
+
+  var seriesList = cache.get('seriesList' + userId);
+  if (!seriesList) {
+    return replyWithError(userId, new Error('Could not get previous list, try searching again'));
   }
 
-  var profile = _.filter(profileList, function(item) {
-    return item.label == profileName;
-  })[0];
+  var profileList = cache.get('seriesProfileList' + userId);
+  if (!profileList) {
+    return replyWithError(userId, new Error('Something went wrong, try searching again'));
+  }
 
-  if (profile === undefined) {
-    throw new Error('could not find the profile ' + profileName);
+  var profile = _.filter(profileList, function(item) { return item.label === profileName; })[0];
+  if (!profile) {
+    return replyWithError(userId, new Error('Something went wrong, try searching again'));
   }
 
   // set series option to cache
@@ -591,19 +588,15 @@ function handleSeriesProfile(userId, profileName) {
   sonarr.get('rootfolder')
     .then(function(result) {
       if (!result.length) {
-        throw new Error('could not get folders, try searching again');
+        throw new Error('Could not get folders, try searching again');
       }
 
-      if (cache.get('seriesList' + userId) === undefined) {
-        throw new Error('could not get previous list, try searching again');
-      }
       return result;
     })
     .then(function(folders) {
       logger.info('user: %s, message: requested to get folder list', userId);
 
-      var folderList = [];
-      var keyboardList = [];
+      var folderList = [], keyboardList = [];
       var response = ['*Found ' + folders.length + ' folders:*'];
       _.forEach(folders, function(n, key) {
         folderList.push({
@@ -618,7 +611,7 @@ function handleSeriesProfile(userId, profileName) {
       });
       response.push(i18n.__('selectFromMenu'));
 
-      logger.info('user: %s, message: found the following folders %s', userId, keyboardList.join(', '));
+      logger.info('user: %s, message: found the following folders %s', userId, keyboardList.join(','));
 
       // set cache
       cache.set('seriesFolderList' + userId, folderList);
@@ -631,12 +624,14 @@ function handleSeriesProfile(userId, profileName) {
         keyboard: response.keyboard,
         one_time_keyboard: true
       };
+
       var opts = {
         'disable_web_page_preview': true,
         'parse_mode': 'Markdown',
         'selective': 2,
         'reply_markup': JSON.stringify(keyboard),
       };
+
       bot.sendMessage(userId, response.message, opts);
     })
     .catch(function(err) {
@@ -649,13 +644,11 @@ function handleSeriesFolder(userId, folderName) {
   var seriesList = cache.get('seriesList' + userId);
   var folderList = cache.get('seriesFolderList' + userId);
 
-  if (seriesList === undefined || seriesId === undefined || folderList === undefined) {
+  if (!seriesId || !seriesList || !folderList) {
     return replyWithError(userId, new Error('Something went wrong, try searching again'));
   }
 
-  var folder = _.filter(folderList, function(item) {
-    return item.path == folderName;
-  })[0];
+  var folder = _.filter(folderList, function(item) { return item.path === folderName; })[0];
 
   // set movie option to cache
   cache.set('seriesFolderId' + userId, folder.folderId);
@@ -663,9 +656,7 @@ function handleSeriesFolder(userId, folderName) {
   logger.info('user: %s, message: requested to get monitor list', userId);
 
   var monitor = ['future', 'all', 'none', 'latest', 'first'];
-  var monitorList = [];
-  var keyboardList = [];
-  var keyboardRow = [];
+  var monitorList = [], keyboardList = [], keyboardRow = [];
   var response = ['*Select which seasons to monitor:*'];
   _.forEach(monitor, function(n, key) {
     monitorList.push({
@@ -676,19 +667,19 @@ function handleSeriesFolder(userId, folderName) {
     response.push('*' + (key + 1) + '*) ' + n);
 
     keyboardRow.push(n);
-    if (keyboardRow.length == 2) {
+    if (keyboardRow.length === 2) {
       keyboardList.push(keyboardRow);
       keyboardRow = [];
     }
   });
 
-  if (keyboardRow.length == 1) {
+  if (keyboardRow.length === 1) {
     keyboardList.push([keyboardRow[0]]);
   }
 
   response.push(i18n.__('selectFromMenu'));
 
-  logger.info('user: %s, message: found the following monitor types %s', userId, keyboardList.join(', '));
+  logger.info('user: %s, message: found the following monitor types %s', userId, keyboardList.join(','));
 
   // set cache
   cache.set('seriesMonitorList' + userId, monitorList);
@@ -698,12 +689,14 @@ function handleSeriesFolder(userId, folderName) {
     keyboard: keyboardList,
     one_time_keyboard: true
   };
+
   var opts = {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
     'reply_markup': JSON.stringify(keyboard),
   };
+
   bot.sendMessage(userId, response.join('\n'), opts);
 }
 
@@ -716,25 +709,14 @@ function handleSeriesMonitor(userId, monitorType) {
   var folderList = cache.get('seriesFolderList' + userId);
   var monitorList = cache.get('seriesMonitorList' + userId);
 
-  if (folderList === undefined || profileList === undefined || seriesList === undefined || monitorList === undefined) {
-    throw new Error('something went wrong, try searching again');
+  if (!folderList || !profileList || !seriesList || !monitorList) {
+    return replyWithError(userId, new Error('Something went wrong, try searching again'));
   }
 
-  var series = _.filter(seriesList, function(item) {
-    return item.id == seriesId;
-  })[0];
-
-  var profile = _.filter(profileList, function(item) {
-    return item.id == profileId;
-  })[0];
-
-  var folder = _.filter(folderList, function(item) {
-    return item.folderId == folderId;
-  })[0];
-
-  var monitor = _.filter(monitorList, function(item) {
-    return item.type == monitorType;
-  })[0];
+  var series = _.filter(seriesList, function(item) { return item.id === seriesId; })[0];
+  var profile = _.filter(profileList, function(item) { return item.id === profileId; })[0];
+  var folder = _.filter(folderList, function(item) { return item.folderId === folderId; })[0];
+  var monitor = _.filter(monitorList, function(item) { return item.type === monitorType; })[0];
 
   var postOpts = {};
   postOpts.tvdbId = series.tvdbId;
@@ -747,9 +729,7 @@ function handleSeriesMonitor(userId, monitorType) {
   postOpts.qualityProfileId = profile.profileId;
 
   var lastSeason = _.max(series.seasons, 'seasonNumber');
-  var firstSeason = _.min(_.reject(series.seasons, {
-    seasonNumber: 0
-  }), 'seasonNumber');
+  var firstSeason = _.min(_.reject(series.seasons, { seasonNumber: 0 }), 'seasonNumber');
 
   if (monitor.type === 'future') {
     postOpts.addOptions = {};
@@ -759,8 +739,7 @@ function handleSeriesMonitor(userId, monitorType) {
     postOpts.addOptions = {};
     postOpts.addOptions.ignoreEpisodesWithFiles = false;
     postOpts.addOptions.ignoreEpisodesWithoutFiles = false;
-  } else if (monitor.type === 'none') {
-    // mark all seasons (+1) not monitored
+  } else if (monitor.type === 'none') { // mark all seasons (+1) not monitored
     _.each(series.seasons, function(season) {
       if (season.seasonNumber >= lastSeason.seasonNumber + 1) {
         season.monitored = true;
@@ -768,8 +747,7 @@ function handleSeriesMonitor(userId, monitorType) {
         season.monitored = false;
       }
     });
-  } else if (monitor.type === 'latest') {
-    // update latest season to be monitored
+  } else if (monitor.type === 'latest') { // update latest season to be monitored
     _.each(series.seasons, function(season) {
       if (season.seasonNumber >= lastSeason.seasonNumber) {
         season.monitored = true;
@@ -777,8 +755,7 @@ function handleSeriesMonitor(userId, monitorType) {
         season.monitored = false;
       }
     });
-  } else if (monitor.type === 'first') {
-    // mark all as not monitored
+  } else if (monitor.type === 'first') { // mark all as not monitored
     _.each(series.seasons, function(season) {
       if (season.seasonNumber >= lastSeason.seasonNumber + 1) {
         season.monitored = true;
@@ -802,15 +779,18 @@ function handleSeriesMonitor(userId, monitorType) {
 
   sonarr.post('series', postOpts)
     .then(function(result) {
-      logger.info('user: %s, message: added series "%s"', userId, series.title);
-
       if (!result) {
-        throw new Error('could not add series, try searching again.');
+        throw new Error('Could not add series, try searching again.');
       }
+
+      logger.info('user: %s, message: added series "%s"', userId, series.title);
 
       bot.sendMessage(userId, 'Series `' + series.title + '` added', {
         'selective': 2,
-        'parse_mode': 'Markdown'
+        'parse_mode': 'Markdown',
+        'reply_markup': {
+          'hide_keyboard': true
+        }
       });
     })
     .catch(function(err) {
@@ -823,6 +803,8 @@ function handleSeriesMonitor(userId, monitorType) {
 
 function handleRevokeUser(userId, revokedUser) {
 
+  logger.info('user: %s, message: selected revoke user %s', userId, revokedUser);
+
   var keyboardList = [];
   var response = ['Are you sure you want to revoke access to ' + revokedUser + '?'];
   keyboardList.push(['NO']);
@@ -832,18 +814,18 @@ function handleRevokeUser(userId, revokedUser) {
   cache.set('state' + userId, state.admin.REVOKE_CONFIRM);
   cache.set('revokedUserName' + userId, revokedUser);
 
-  logger.info('user: %s, message: selected revoke user %s', userId, revokedUser);
-
   var keyboard = {
     keyboard: keyboardList,
     one_time_keyboard: true
   };
+
   var opts = {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
     'reply_markup': JSON.stringify(keyboard),
   };
+
   bot.sendMessage(userId, response.join('\n'), opts);
 }
 
@@ -854,6 +836,7 @@ function handleRevokeUserConfirm(userId, revokedConfirm) {
   var revokedUser = cache.get('revokedUserName' + userId);
   var opts = {};
   var message = '';
+
   if (revokedConfirm === 'NO' || revokedConfirm === 'no') {
       clearCache(userId);
       message = 'Access for ' + revokedUser + ' has *NOT* been revoked.';
@@ -864,6 +847,7 @@ function handleRevokeUserConfirm(userId, revokedConfirm) {
       };
       return bot.sendMessage(userId, message, opts);
   }
+
   var revokedUserList = cache.get('revokeUserList' + userId);
   var i = revokedUserList.map(function(e) { return e.keyboardValue; }).indexOf(revokedUser);
   var revokedUserObj = revokedUserList[i];
@@ -874,11 +858,13 @@ function handleRevokeUserConfirm(userId, revokedConfirm) {
   updateACL();
 
   message = 'Access for ' + revokedUser + ' has been revoked.';
+
   opts = {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
   };
+
   bot.sendMessage(userId, message, opts);
   clearCache(userId);
 }
@@ -900,12 +886,14 @@ function handleUnRevokeUser(userId, revokedUser) {
     keyboard: keyboardList,
     one_time_keyboard: true
   };
+
   var opts = {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
     'reply_markup': JSON.stringify(keyboard),
   };
+
   bot.sendMessage(userId, response.join('\n'), opts);
 }
 
@@ -921,7 +909,7 @@ function handleUnRevokeUserConfirm(userId, revokedConfirm) {
       message = 'Access for ' + revokedUser + ' has *NOT* been unrevoked.';
       opts = {
         'disable_web_page_preview': true,
-         'parse_mode': 'Markdown',
+        'parse_mode': 'Markdown',
         'selective': 2,
       };
       return bot.sendMessage(userId, message, opts);
@@ -935,11 +923,13 @@ function handleUnRevokeUserConfirm(userId, revokedConfirm) {
   updateACL();
 
   message = 'Access for ' + revokedUser + ' has been unrevoked.';
+
   opts = {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
   };
+
   bot.sendMessage(userId, message, opts);
   clearCache(userId);
 }
@@ -996,7 +986,7 @@ function isRevoked(userId) {
 }
 
 function promptOwnerConfig(userId) {
-  if (config.bot.owner === 0) {
+  if (!config.bot.owner) {
     var message = ['Your User ID: ' + userId];
     message.push('Please add your User ID to the config file field labeled \'owner\'.');
     message.push('Please restart the bot once this has been updated.');
@@ -1014,7 +1004,7 @@ function replyWithError(userId, err) {
   bot.sendMessage(userId, 'Oh no! ' + err, {
     'parse_mode': 'Markdown',
     'reply_markup': {
-      'hide_keyboard': false
+      'hide_keyboard': true
     }
   });
 }

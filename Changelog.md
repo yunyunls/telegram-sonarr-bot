@@ -1,5 +1,12 @@
 ## Changelog
 
+### v0.2.1
+- Added `/wanted` command to search all wanted/missing episodes
+- Added `/upcoming` command to check for upcoming episodes (a basic calendar basically)
+- New NPM modules `moment`, `i18n`, and `winston` (please run npm install if upgrading)
+- Limit series return from `/query`
+- Lots of refactoring and bug fixes
+
 ### v0.2.0
 - Added `/revoke` and `/unrevoke` commands for admin
 - Fixed a few Docker issues.

@@ -127,14 +127,16 @@ Send the monitor type using the custom keyboard
 If everything goes well, you'll see a text from the bot saying the series was added.
 
 ### Additional commands
+* `/upcoming` shows upcoming episodes, has a day parameter, defaults to 3 days
 * `/clear` clear all previous commands and cache
 
 ### Admin commands
+* `/wanted` search all missing/wanted episodes
 * `/rss` perform an RSS Sync
 * `/refresh` refreshes all series
 * `/users` list users
-* `/revoke` ban user from bot
-* `/unrevoke` unban user from bot
+* `/revoke` revoke user from bot
+* `/unrevoke` un-revoke user from bot
 
 ## Docker
 Alternatively you may use Docker to start the bot

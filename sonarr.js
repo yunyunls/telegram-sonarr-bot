@@ -1,6 +1,7 @@
 'use strict';
 
 var fs          = require('fs');                        // https://nodejs.org/api/fs.html
+var moment      = require('moment');                    // https://www.npmjs.com/package/moment
 var _           = require('lodash');                    // https://www.npmjs.com/package/lodash
 var NodeCache   = require('node-cache');                // https://www.npmjs.com/package/node-cache
 var SonarrAPI   = require('sonarr-api');                // https://www.npmjs.com/package/sonarr-api
@@ -390,7 +391,89 @@ bot.onText(/\/unrevoke/, function(msg) {
   });
 });
 
+/*
+ * handle upcoming (shows today + X future days)
+ */
+ bot.onText(/\/upcoming\s?(\d+)?/, function(msg, match) {
+  var fromId = msg.from.id;
+  var days = match[1] || 3;
 
+  verifyUser(fromId);
+
+  var fromDate = moment().toISOString();
+  var toDate = moment().add(days, 'day').toISOString();
+
+  logger.info('user: %s, message: sent \'/calendar\' command from %s to %s', fromId, fromDate, toDate);
+
+  sonarr.get('calendar', {
+    'start': fromDate,
+    'end': toDate
+    })
+    .then(function (episode) {
+      if (!episode.length) {
+        throw new Error('Nothing in the calendar for the specified time.');
+      }
+
+      var response = [];
+      _.forEach(episode, function(n, key) {
+        var done = (n.hasFile ? ' - *Done*' : '');
+        response.push(key + 1 + ') ' + n.series.title + ' - '  + n.airDate + done);
+      });
+
+      return response.join('\n');
+    })
+    .then(function(response) {
+      logger.info('user: %s, message: found the following series %s', fromId, response.replace('\n', '\s'));
+
+      bot.sendMessage(fromId, response, { 'parse_mode': 'Markdown', 'selective': 2 });
+    })
+    .catch(function(err) {
+      replyWithError(fromId, err);
+    });
+
+ });
+
+/*
+ * handle searching all wanted
+ */
+bot.onText(/\/wanted/, function(msg) {
+  var fromId = msg.from.id;
+
+  verifyAdmin(fromId);
+
+  logger.info('user: %s, message: sent \'/wanted\' command', fromId);
+
+  sonarr.get('/wanted/missing', {
+      'page': 1,
+      'pageSize': 50,
+      'sortKey': 'airDateUtc',
+      'sortDir': 'desc'
+    })
+    .then(function(wantedEpisodes) {
+
+      var episodeIds = [];
+      _.forEach(wantedEpisodes.records, function(n, key) {
+        episodeIds.push(n.id);
+      });
+
+      return episodeIds;
+
+    }).then(function(episodes) {
+      sonarr.post('command', {
+          'name': 'EpisodeSearch',
+          'episodeIds': episodes
+        })
+        .then(function() {
+          logger.info('user: %s, message: \'/wanted\' command successfully executed', fromId);
+          bot.sendMessage(fromId, 'Wanted command sent.');
+        })
+        .catch(function(err) {
+          replyWithError(fromId, err);
+        });
+    }).catch(function(err) {
+      replyWithError(fromId, err);
+    });
+});
 /*
  * handle rss sync
  */

@@ -80,18 +80,22 @@ Found 6 series:
 4) Game of Silence (TR) - 2012
 5) The Genius Game - 2013
 6) More Than A Game - The Story of Football
-
-Please select from the menu below.
 ```
+
+Use the custom keyboard to select the series.
+
+![Step One](https://raw.githubusercontent.com/onedr0p/telegram-sonarr-bot/master/examples/step_1.png)
 
 The bot will ask you for the quality
 
 ```
 Found 2 profiles:
 1) SD 2) HD
-
-Please select from the menu below.
 ```
+
+Send the profile using the custom keyboard
+
+![Step Two](https://raw.githubusercontent.com/onedr0p/telegram-sonarr-bot/master/examples/step_2.png)
 
 The bot will ask you where the path you want the series to go
 
@@ -99,9 +103,11 @@ The bot will ask you where the path you want the series to go
 Found 2 folders:
 1) /Television/Airing/
 2) /Television/Archived/
-
-Please select from the menu below.
 ```
+
+Send the folder using the custom keyboard
+
+![Step Two](https://raw.githubusercontent.com/onedr0p/telegram-sonarr-bot/master/examples/step_3.png)
 
 Lastly, the bot will ask you which seasons you would like to monitor/download
 
@@ -112,9 +118,11 @@ Select which seasons to monitor:
 3) none
 4) latest
 5) first
-
-Please select from the menu below.
 ```
+
+Send the monitor type using the custom keyboard
+
+![Step Two](https://raw.githubusercontent.com/onedr0p/telegram-sonarr-bot/master/examples/step_4.png)
 
 If everything goes well, you'll see a text from the bot saying the series was added.
 

@@ -35,9 +35,7 @@ class Response {
 /*
  * set up the telegram bot
  */
-var bot = new TelegramBot(config.telegram.botToken, {
-  polling: true
-});
+var bot = new TelegramBot(config.telegram.botToken, { polling: true });
 
 /*
  * set up the sonarr api
@@ -78,12 +76,7 @@ bot.onText(/\/start/, function(msg) {
   var response = ['Hello ' + getTelegramName(msg.from) + ', use /q to search'];
   response.push('\n`/q [series name]` to continue...');
 
-  var opts = {
-    'parse_mode': 'Markdown',
-    'selective': 2,
-  };
-
-  bot.sendMessage(fromId, response.join('\n'), opts);
+  bot.sendMessage(fromId, response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
 });
 
 /*
@@ -151,17 +144,12 @@ bot.onText(/\/[Qq](uery)? (.+)/, function(msg, match) {
       return new Response(response.join('\n'), keyboardList);
     })
     .then(function(response) {
-      var keyboard = {
-        keyboard: response.keyboard,
-        one_time_keyboard: true
-      };
-      var opts = {
+      bot.sendMessage(fromId, response.message, {
         'disable_web_page_preview': true,
         'parse_mode': 'Markdown',
         'selective': 2,
-        'reply_markup': JSON.stringify(keyboard),
-      };
-      bot.sendMessage(fromId, response.message, opts);
+        'reply_markup': JSON.stringify({ keyboard: response.keyboard, one_time_keyboard: true })
+      });
     })
     .catch(function(err) {
       replyWithError(fromId, err);
@@ -281,13 +269,11 @@ bot.onText(/\/users/, function(msg) {
     response.push('*' + (key + 1) + '*) ' + getTelegramName(n));
   });
 
-  var opts = {
+  bot.sendMessage(fromId, response.join('\n'), {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
-  };
-
-  bot.sendMessage(fromId, response.join('\n'), opts);
+  });
 });
 
 /*
@@ -302,17 +288,17 @@ bot.onText(/\/revoke/, function(msg) {
 
   if (!acl.allowedUsers.length) {
     var message = 'There aren\'t any allowed users.';
+
     opts = {
       'disable_web_page_preview': true,
       'parse_mode': 'Markdown',
       'selective': 2,
     };
+
     bot.sendMessage(fromId, message, opts);
   }
 
-  var keyboardList = [];
-  var keyboardRow = [];
-  var revokeList = [];
+  var keyboardList = [], keyboardRow = [], revokeList = [];
   var response = ['*Allowed Users:*'];
   _.forEach(acl.allowedUsers, function(n, key) {
     revokeList.push({
@@ -340,17 +326,12 @@ bot.onText(/\/revoke/, function(msg) {
   cache.set('state' + fromId, state.admin.REVOKE);
   cache.set('revokeUserList' + fromId, revokeList);
 
-  var keyboard = {
-    keyboard: keyboardList,
-    one_time_keyboard: true
-  };
-  opts = {
+  bot.sendMessage(fromId, response.join('\n'), {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
-    'reply_markup': JSON.stringify(keyboard),
-  };
-  bot.sendMessage(fromId, response.join('\n'), opts);
+    'reply_markup': JSON.stringify({ keyboard: keyboardList, one_time_keyboard: true }),
+  });
 });
 
 /*
@@ -365,17 +346,15 @@ bot.onText(/\/unrevoke/, function(msg) {
 
   if (!acl.revokedUsers.length) {
     var message = 'There aren\'t any revoked users.';
-    opts = {
+
+    bot.sendMessage(fromId, message, {
       'disable_web_page_preview': true,
       'parse_mode': 'Markdown',
       'selective': 2,
-    };
-    bot.sendMessage(fromId, message, opts);
+    });
   }
 
-  var keyboardList = [];
-  var keyboardRow = [];
-  var revokeList = [];
+  var keyboardList = [], keyboardRow = [], revokeList = [];
   var response = ['*Revoked Users:*'];
   _.forEach(acl.revokedUsers, function(n, key) {
     revokeList.push({
@@ -395,7 +374,7 @@ bot.onText(/\/unrevoke/, function(msg) {
 
   response.push(i18n.__('selectFromMenu'));
 
-  if (keyboardRow.length == 1) {
+  if (keyboardRow.length === 1) {
     keyboardList.push([keyboardRow[0]]);
   }
 
@@ -403,17 +382,12 @@ bot.onText(/\/unrevoke/, function(msg) {
   cache.set('state' + fromId, state.admin.UNREVOKE);
   cache.set('unrevokeUserList' + fromId, revokeList);
 
-  var keyboard = {
-    keyboard: keyboardList,
-    one_time_keyboard: true
-  };
-  opts = {
+  bot.sendMessage(fromId, response.join('\n'), {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
-    'reply_markup': JSON.stringify(keyboard),
-  };
-  bot.sendMessage(fromId, response.join('\n'), opts);
+    'reply_markup': JSON.stringify({ keyboard: keyboardList, one_time_keyboard: true })
+  });
 });
 
 
@@ -551,14 +525,12 @@ function handleSeries(userId, seriesDisplayName) {
         one_time_keyboard: true
       };
 
-      var opts = {
+      bot.sendMessage(userId, response.message, {
         'disable_web_page_preview': true,
         'parse_mode': 'Markdown',
         'selective': 2,
         'reply_markup': JSON.stringify(keyboard),
-      };
-
-      bot.sendMessage(userId, response.message, opts);
+      });
     })
     .catch(function(err) {
       replyWithError(userId, err);
@@ -620,19 +592,12 @@ function handleSeriesProfile(userId, profileName) {
       return new Response(response.join('\n'), keyboardList);
     })
     .then(function(response) {
-      var keyboard = {
-        keyboard: response.keyboard,
-        one_time_keyboard: true
-      };
-
-      var opts = {
+      bot.sendMessage(userId, response.message, {
         'disable_web_page_preview': true,
         'parse_mode': 'Markdown',
         'selective': 2,
-        'reply_markup': JSON.stringify(keyboard),
-      };
-
-      bot.sendMessage(userId, response.message, opts);
+        'reply_markup': JSON.stringify({ keyboard: response.keyboard, one_time_keyboard: true })
+      });
     })
     .catch(function(err) {
       replyWithError(userId, err);
@@ -685,19 +650,12 @@ function handleSeriesFolder(userId, folderName) {
   cache.set('seriesMonitorList' + userId, monitorList);
   cache.set('state' + userId, state.sonarr.MONITOR);
 
-  var keyboard = {
-    keyboard: keyboardList,
-    one_time_keyboard: true
-  };
-
-  var opts = {
+  bot.sendMessage(userId, response.join('\n'), {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
-    'reply_markup': JSON.stringify(keyboard),
-  };
-
-  bot.sendMessage(userId, response.join('\n'), opts);
+    'reply_markup': JSON.stringify({ keyboard: keyboardList, one_time_keyboard: true })
+  });
 }
 
 function handleSeriesMonitor(userId, monitorType) {
@@ -731,45 +689,53 @@ function handleSeriesMonitor(userId, monitorType) {
   var lastSeason = _.max(series.seasons, 'seasonNumber');
   var firstSeason = _.min(_.reject(series.seasons, { seasonNumber: 0 }), 'seasonNumber');
 
-  if (monitor.type === 'future') {
-    postOpts.addOptions = {};
-    postOpts.addOptions.ignoreEpisodesWithFiles = true;
-    postOpts.addOptions.ignoreEpisodesWithoutFiles = true;
-  } else if (monitor.type === 'all') {
-    postOpts.addOptions = {};
-    postOpts.addOptions.ignoreEpisodesWithFiles = false;
-    postOpts.addOptions.ignoreEpisodesWithoutFiles = false;
-  } else if (monitor.type === 'none') { // mark all seasons (+1) not monitored
-    _.each(series.seasons, function(season) {
-      if (season.seasonNumber >= lastSeason.seasonNumber + 1) {
-        season.monitored = true;
-      } else {
-        season.monitored = false;
-      }
-    });
-  } else if (monitor.type === 'latest') { // update latest season to be monitored
-    _.each(series.seasons, function(season) {
-      if (season.seasonNumber >= lastSeason.seasonNumber) {
-        season.monitored = true;
-      } else {
-        season.monitored = false;
-      }
-    });
-  } else if (monitor.type === 'first') { // mark all as not monitored
-    _.each(series.seasons, function(season) {
-      if (season.seasonNumber >= lastSeason.seasonNumber + 1) {
-        season.monitored = true;
-      } else {
-        season.monitored = false;
-      }
-    });
+  switch (monitor.type) {
+    case 'future':
+      postOpts.addOptions = {};
+      postOpts.addOptions.ignoreEpisodesWithFiles = true;
+      postOpts.addOptions.ignoreEpisodesWithoutFiles = true;
+      break;
+    case 'all':
+      postOpts.addOptions = {};
+      postOpts.addOptions.ignoreEpisodesWithFiles = false;
+      postOpts.addOptions.ignoreEpisodesWithoutFiles = false;
+      break;
+    case 'none':
+      _.each(series.seasons, function(season) {
+        if (season.seasonNumber >= lastSeason.seasonNumber + 1) {
+          season.monitored = true;
+        } else {
+          season.monitored = false;
+        }
+      });
+      break;
+    case 'latest':
+      _.each(series.seasons, function(season) {
+        if (season.seasonNumber >= lastSeason.seasonNumber) {
+          season.monitored = true;
+        } else {
+          season.monitored = false;
+        }
+      });
+      break;
+    case 'first':
+      _.each(series.seasons, function(season) {
+        if (season.seasonNumber >= lastSeason.seasonNumber + 1) {
+          season.monitored = true;
+        } else {
+          season.monitored = false;
+        }
+      });
 
-    // update first season
-    _.each(series.seasons, function(season) {
-      if (season.seasonNumber === firstSeason.seasonNumber) {
-        season.monitored = !season.monitored;
-      }
-    });
+      // update first season
+      _.each(series.seasons, function(season) {
+        if (season.seasonNumber === firstSeason.seasonNumber) {
+          season.monitored = !season.monitored;
+        }
+      });
+      break;
+    default:
+      return replyWithError(userId, new Error('Something went wrong, try searching again'));
   }
 
   // update seasons to be monitored
@@ -814,19 +780,12 @@ function handleRevokeUser(userId, revokedUser) {
   cache.set('state' + userId, state.admin.REVOKE_CONFIRM);
   cache.set('revokedUserName' + userId, revokedUser);
 
-  var keyboard = {
-    keyboard: keyboardList,
-    one_time_keyboard: true
-  };
-
-  var opts = {
+  bot.sendMessage(userId, response.join('\n'), {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
-    'reply_markup': JSON.stringify(keyboard),
-  };
-
-  bot.sendMessage(userId, response.join('\n'), opts);
+    'reply_markup': JSON.stringify({ keyboard: keyboardList, one_time_keyboard: true }),
+  });
 }
 
 function handleRevokeUserConfirm(userId, revokedConfirm) {
@@ -840,12 +799,11 @@ function handleRevokeUserConfirm(userId, revokedConfirm) {
   if (revokedConfirm === 'NO' || revokedConfirm === 'no') {
       clearCache(userId);
       message = 'Access for ' + revokedUser + ' has *NOT* been revoked.';
-      opts = {
+      return bot.sendMessage(userId, message, {
         'disable_web_page_preview': true,
          'parse_mode': 'Markdown',
         'selective': 2,
-      };
-      return bot.sendMessage(userId, message, opts);
+      });
   }
 
   var revokedUserList = cache.get('revokeUserList' + userId);
@@ -859,13 +817,12 @@ function handleRevokeUserConfirm(userId, revokedConfirm) {
 
   message = 'Access for ' + revokedUser + ' has been revoked.';
 
-  opts = {
+  bot.sendMessage(userId, message, {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
-    'selective': 2,
-  };
+    'selective': 2
+  });
 
-  bot.sendMessage(userId, message, opts);
   clearCache(userId);
 }
 
@@ -887,14 +844,12 @@ function handleUnRevokeUser(userId, revokedUser) {
     one_time_keyboard: true
   };
 
-  var opts = {
+  bot.sendMessage(userId, response.join('\n'), {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
-    'reply_markup': JSON.stringify(keyboard),
-  };
-
-  bot.sendMessage(userId, response.join('\n'), opts);
+    'reply_markup': JSON.stringify({keyboard: keyboardList, one_time_keyboard: true })
+  });
 }
 
 function handleUnRevokeUserConfirm(userId, revokedConfirm) {
@@ -907,12 +862,11 @@ function handleUnRevokeUserConfirm(userId, revokedConfirm) {
   if (revokedConfirm === 'NO' || revokedConfirm === 'no') {
       clearCache(userId);
       message = 'Access for ' + revokedUser + ' has *NOT* been unrevoked.';
-      opts = {
+      return bot.sendMessage(userId, message, {
         'disable_web_page_preview': true,
         'parse_mode': 'Markdown',
         'selective': 2,
-      };
-      return bot.sendMessage(userId, message, opts);
+      });
   }
 
   var unrevokedUserList = cache.get('unrevokeUserList' + userId);
@@ -924,13 +878,12 @@ function handleUnRevokeUserConfirm(userId, revokedConfirm) {
 
   message = 'Access for ' + revokedUser + ' has been unrevoked.';
 
-  opts = {
+  bot.sendMessage(userId, message, {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
-  };
+  });
 
-  bot.sendMessage(userId, message, opts);
   clearCache(userId);
 }
 
@@ -943,7 +896,7 @@ function updateACL() {
       throw new Error(err);
     }
 
-    logger.info('the access control list was updated!');
+    logger.info('the access control list was updated');
   });
 }
 

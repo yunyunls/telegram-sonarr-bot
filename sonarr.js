@@ -471,14 +471,11 @@ bot.onText(/\/wanted/, function(msg) {
       'sortDir': 'desc'
     })
     .then(function(wantedEpisodes) {
-
       var episodeIds = [];
       _.forEach(wantedEpisodes.records, function(n, key) {
         episodeIds.push(n.id);
       });
-
       return episodeIds;
-
     }).then(function(episodes) {
       sonarr.post('command', {
           'name': 'EpisodeSearch',
@@ -570,78 +567,100 @@ function handleSeries(userId, seriesDisplayName) {
     return replyWithError(userId, new Error('Could not find the series with title ' + seriesDisplayName));
   }
 
-  var seriesId = series.id;
+  // create a workflow
+  var workflow = new (require('events').EventEmitter)();
 
-  // set cache
-  cache.set('seriesId' + userId, seriesId);
+  // check for existing series on sonarr
+  workflow.on('checkSonarrSeries', function () {
+    sonarr.get('series')
+      .then(function(result) {
+        logger.info('user: %s, message: looking for existing series', userId);
 
-  sonarr.get('profile')
-    .then(function(result) {
-      if (!result.length) {
-        throw new Error('Could not get profiles, try searching again');
-      }
+        var existingSeries = _.filter(result, function(item) { return item.tvdbId === series.tvdbId; })[0];
+        if (existingSeries) {
+          throw new Error('Series already exists and is already being tracked by Sonarr');
+        }
+        workflow.emit('getSonarrProfiles');
+      }).catch(function(err) {
+        replyWithError(userId, err);
+      });
+  });
 
-      return result;
-    })
-    .then(function(profiles) {
-      logger.info('user: %s, message: requested to get profile list', userId);
+  // get the sonarr profiles
+  workflow.on('getSonarrProfiles', function () {
 
-      var profileList = [];
-      var keyboardList = [];
-      var keyboardRow = [];
+    // set cache
+    cache.set('seriesId' + userId, series.id);
 
-      var response = ['*Found ' + profiles.length + ' profiles:*'];
-      _.forEach(profiles, function(n, key) {
-        profileList.push({
-          'id': key + 1,
-          'name': n.name,
-          'label': n.name,
-          'profileId': n.id
+    sonarr.get('profile')
+      .then(function(result) {
+        if (!result.length) {
+          throw new Error('Could not get profiles, try searching again');
+        }
+
+        return result;
+      })
+      .then(function(profiles) {
+        logger.info('user: %s, message: requested to get profile list', userId);
+
+        var profileList = [];
+        var keyboardList = [];
+        var keyboardRow = [];
+
+        var response = ['*Found ' + profiles.length + ' profiles:*'];
+        _.forEach(profiles, function(n, key) {
+          profileList.push({
+            'id': key + 1,
+            'name': n.name,
+            'label': n.name,
+            'profileId': n.id
+          });
+
+          response.push('*' + (key + 1) + '*) ' + n.name);
+
+          // Profile names are short, put two on each custom
+          // keyboard row to reduce scrolling
+          keyboardRow.push(n.name);
+          if (keyboardRow.length === 2) {
+            keyboardList.push(keyboardRow);
+            keyboardRow = [];
+          }
         });
 
-        response.push('*' + (key + 1) + '*) ' + n.name);
-
-        // Profile names are short, put two on each custom
-        // keyboard row to reduce scrolling
-        keyboardRow.push(n.name);
-        if (keyboardRow.length === 2) {
-          keyboardList.push(keyboardRow);
-          keyboardRow = [];
+        if (keyboardRow.length === 1) {
+          keyboardList.push([keyboardRow[0]]);
         }
+        response.push(i18n.__('selectFromMenu'));
+
+        logger.info('user: %s, message: found the following profiles %s', userId, keyboardList.join(','));
+
+        // set cache
+        cache.set('seriesProfileList' + userId, profileList);
+        cache.set('state' + userId, state.sonarr.PROFILE);
+
+        return {
+          message: response.join('\n'),
+          keyboard: keyboardList
+        };
+      })
+      .then(function(response) {
+        bot.sendMessage(userId, response.message, {
+          'disable_web_page_preview': true,
+          'parse_mode': 'Markdown',
+          'selective': 2,
+          'reply_markup': JSON.stringify( { keyboard: response.keyboard, one_time_keyboard: true })
+        });
+      })
+      .catch(function(err) {
+        replyWithError(userId, err);
       });
 
-      if (keyboardRow.length === 1) {
-        keyboardList.push([keyboardRow[0]]);
-      }
-      response.push(i18n.__('selectFromMenu'));
-
-      logger.info('user: %s, message: found the following profiles %s', userId, keyboardList.join(','));
-
-      // set cache
-      cache.set('seriesProfileList' + userId, profileList);
-      cache.set('state' + userId, state.sonarr.PROFILE);
-
-      return {
-        message: response.join('\n'),
-        keyboard: keyboardList
-      };
-    })
-    .then(function(response) {
-      var keyboard = {
-        keyboard: response.keyboard,
-        one_time_keyboard: true
-      };
-
-      bot.sendMessage(userId, response.message, {
-        'disable_web_page_preview': true,
-        'parse_mode': 'Markdown',
-        'selective': 2,
-        'reply_markup': JSON.stringify(keyboard),
-      });
-    })
-    .catch(function(err) {
-      replyWithError(userId, err);
     });
+
+    /**
+     * Initiate the workflow
+     */
+    workflow.emit('checkSonarrSeries');
 }
 
 function handleSeriesProfile(userId, profileName) {

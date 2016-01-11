@@ -128,6 +128,8 @@ If everything goes well, you'll see a text from the bot saying the series was ad
 
 ### Additional commands
 * `/upcoming` shows upcoming episodes, has a day parameter, defaults to 3 days
+* `/library` search Sonarr library for existing shows
+* `/help` show available commands
 * `/clear` clear all previous commands and cache
 
 ### Admin commands

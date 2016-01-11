@@ -1,5 +1,13 @@
 ## Changelog
 
+### v0.2.2
+- Added `/help` command
+- Added `/library` command to search Sonarr library
+- Revised `/start` command
+- Search for exisiting TV series before continuing
+- Create `acl.json` if it doesn't exist
+- More housekeeping
+
 ### v0.2.1
 - Added `/wanted` command to search all wanted/missing episodes
 - Added `/upcoming` command to check for upcoming episodes (a basic calendar basically)

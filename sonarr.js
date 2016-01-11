@@ -54,8 +54,25 @@ bot.onText(/\/start/, function(msg) {
 
   logger.info('user: %s, message: sent \'/start\' command', fromId);
 
-  var response = ['Hello ' + getTelegramName(msg.from) + ', use /q to search'];
-  response.push('\n`/q [series name]` to continue...');
+  var response = ['Hello ' + getTelegramName(msg.from) + '!'];
+  response.push('Below is a list of commands you have access to');
+  response.push('\n*General commands:*');
+  response.push('/start to start this bot');
+  response.push('`/query [series]` add new TV series');
+  response.push('`/library [series]` search Sonarr library');
+  response.push('/upcoming shows upcoming episodes');
+  response.push('/clear clear all previous commands');
+  response.push('/help shows this message');
+
+  if (isAdmin(fromId)) {
+    response.push('\n*Admin commands:*');
+    response.push('/wanted search all missing/wanted episodes');
+    response.push('/rss perform an RSS Sync');
+    response.push('/refresh refreshes all series');
+    response.push('/users list users');
+    response.push('/revoke revoke user from bot');
+    response.push('/unrevoke un-revoke user from bot');
+  }
 
   bot.sendMessage(fromId, response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
 });
@@ -374,6 +391,38 @@ bot.onText(/\/unrevoke/, function(msg) {
   });
 });
 
+/*
+ * handle sonarr library search
+ */
+bot.onText(/\/library (.+)/, function(msg, match) {
+  var fromId = msg.from.id;
+  var query = match[1];
+
+  sonarr.get('series')
+    .then(function(result) {
+      logger.info('user: %s, message: all series', fromId);
+
+      var response = [];
+      _.forEach(result, function(n, key) {
+        var series;
+        if (n.title.search( new RegExp(query, 'i') ) !== -1) {
+          series = '[' + n.title + '](http://thetvdb.com/?tab=series&id=' + n.tvdbId + ')' + (n.year ? ' - _' + n.year + '_' : '');
+          response.push(series);
+        }
+      });
+
+      if (!response.length) {
+        return replyWithError(fromId, new Error('Unable to locate ' + query + ' in sonarr library'));
+      }
+
+      // add title to begining of the array
+      response.unshift('*Found matching results in Sonarr library:*');
+      bot.sendMessage(fromId, response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
+    }).catch(function(err) {
+      replyWithError(fromId, err);
+    });
+});
+
 bot.onText(/\/help/, function(msg) {
   var fromId = msg.from.id;
 
@@ -383,20 +432,21 @@ bot.onText(/\/help/, function(msg) {
 
   var response = ['Hello ' + getTelegramName(msg.from) + ', you asked for help'];
   response.push('\n*General commands:*');
-  response.push('`/start` to start his bot');
-  response.push('`/query` searches for TV series');
-  response.push('`/upcoming` shows upcoming episodes');
-  response.push('`/clear` clear all previous commands');
-  response.push('`/help` shows this message');
+  response.push('/start to start this bot');
+  response.push('`/query [series]` add new TV series');
+  response.push('`/library [series]` search Sonarr library');
+  response.push('/upcoming shows upcoming episodes');
+  response.push('/clear clear all previous commands');
+  response.push('/help shows this message');
 
   if (isAdmin(fromId)) {
     response.push('\n*Admin commands:*');
-    response.push('`/wanted` search all missing/wanted episodes');
-    response.push('`/rss` perform an RSS Sync');
-    response.push('`/refresh` refreshes all series');
-    response.push('`/users` list users');
-    response.push('`/revoke` revoke user from bot');
-    response.push('`/unrevoke` un-revoke user from bot');
+    response.push('/wanted search all missing/wanted episodes');
+    response.push('/rss perform an RSS Sync');
+    response.push('/refresh refreshes all series');
+    response.push('/users list users');
+    response.push('/revoke revoke user from bot');
+    response.push('/unrevoke un-revoke user from bot');
   }
 
   bot.sendMessage(fromId, response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
@@ -1080,7 +1130,7 @@ function replyWithError(userId, err) {
 
   logger.warn('user: %s message: %s', userId, err.message);
 
-  bot.sendMessage(userId, 'Oh no! ' + err, {
+  bot.sendMessage(userId, '*Oh no!* ' + err, {
     'parse_mode': 'Markdown',
     'reply_markup': {
       'hide_keyboard': true

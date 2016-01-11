@@ -24,16 +24,6 @@ try {
 }
 
 /*
- * define response class
- */
-class Response {
-  constructor(message, keyboard) {
-    this.message = message;
-    this.keyboard = keyboard;
-  }
-}
-
-/*
  * set up the telegram bot
  */
 var bot = new TelegramBot(config.telegram.botToken, { polling: true });
@@ -142,7 +132,10 @@ bot.onText(/\/[Qq](uery)? (.+)/, function(msg, match) {
       cache.set('seriesList' + fromId, seriesList);
       cache.set('state' + fromId, state.sonarr.SERIES);
 
-      return new Response(response.join('\n'), keyboardList);
+      return {
+        message: response.join('\n'),
+        keyboard: keyboardList
+      };
     })
     .then(function(response) {
       bot.sendMessage(fromId, response.message, {
@@ -600,7 +593,10 @@ function handleSeries(userId, seriesDisplayName) {
       cache.set('seriesProfileList' + userId, profileList);
       cache.set('state' + userId, state.sonarr.PROFILE);
 
-      return new Response(response.join('\n'), keyboardList);
+      return {
+        message: response.join('\n'),
+        keyboard: keyboardList
+      };
     })
     .then(function(response) {
       var keyboard = {
@@ -672,7 +668,10 @@ function handleSeriesProfile(userId, profileName) {
       cache.set('seriesFolderList' + userId, folderList);
       cache.set('state' + userId, state.sonarr.FOLDER);
 
-      return new Response(response.join('\n'), keyboardList);
+      return {
+        message: response.join('\n'),
+        keyboard: keyboardList
+      };
     })
     .then(function(response) {
       bot.sendMessage(userId, response.message, {

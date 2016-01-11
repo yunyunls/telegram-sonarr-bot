@@ -11,7 +11,7 @@ var state  = require(__dirname + '/lib/state');         // handles command struc
 var logger = require(__dirname + '/lib/logger');        // logs to file and console
 var i18n   = require(__dirname + '/lib/lang');          // set up multilingual support
 var config = require(__dirname + '/lib/config');        // the concised configuration
-var acl    = require(__dirname + '/lib/acl');
+var acl    = require(__dirname + '/lib/acl');           // set up the acl file
 
 /*
  * set up the telegram bot

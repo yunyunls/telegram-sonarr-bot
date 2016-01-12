@@ -394,19 +394,24 @@ bot.onText(/\/unrevoke/, function(msg) {
 /*
  * handle sonarr library search
  */
-bot.onText(/\/library (.+)/, function(msg, match) {
+bot.onText(/\/library\s?(.+)?/, function(msg, match) {
   var fromId = msg.from.id;
-  var query = match[1];
+  var query = match[1] || 0;
 
   sonarr.get('series')
     .then(function(result) {
       logger.info('user: %s, message: all series', fromId);
 
+      _.sortBy(result, 'title');
+
       var response = [];
       _.forEach(result, function(n, key) {
-        var series;
-        if (n.title.search( new RegExp(query, 'i') ) !== -1) {
-          series = '[' + n.title + '](http://thetvdb.com/?tab=series&id=' + n.tvdbId + ')' + (n.year ? ' - _' + n.year + '_' : '');
+        var series = '[' + n.title + '](http://thetvdb.com/?tab=series&id=' + n.tvdbId + ')' + (n.year ? ' - _' + n.year + '_' : '');
+        if (query) {
+          if (n.title.search( new RegExp(query, 'i') ) !== -1) {
+            response.push(series);
+          }
+        } else {
           response.push(series);
         }
       });
@@ -415,9 +420,24 @@ bot.onText(/\/library (.+)/, function(msg, match) {
         return replyWithError(fromId, new Error('Unable to locate ' + query + ' in sonarr library'));
       }
 
-      // add title to begining of the array
-      response.unshift('*Found matching results in Sonarr library:*');
-      bot.sendMessage(fromId, response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
+      response.sort();
+
+      if (query) {
+        // add title to begining of the array
+        response.unshift('*Found matching results in Sonarr library:*');
+      }
+
+      if (response.length > 51) {
+        var splitReponse = _.chunk(response, 51);
+        // splitReponse.sort();
+        _.forEach(splitReponse, function(n) {
+          n.sort();
+          bot.sendMessage(fromId, n.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
+        });
+      } else {
+        bot.sendMessage(fromId, response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
+      }
+
     }).catch(function(err) {
       replyWithError(fromId, err);
     });

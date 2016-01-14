@@ -427,12 +427,12 @@ bot.onText(/\/library\s?(.+)?/, function(msg, match) {
         response.unshift('*Found matching results in Sonarr library:*');
       }
 
-      if (response.length > 51) {
-        var splitReponse = _.chunk(response, 51);
-        // splitReponse.sort();
+      if (response.length > 50) {
+        var splitReponse = _.chunk(response, 50);
+        splitReponse.sort();
         _.forEach(splitReponse, function(n) {
-          n.sort();
-          bot.sendMessage(fromId, n.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
+         n.sort();
+         bot.sendMessage(fromId, n.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
         });
       } else {
         bot.sendMessage(fromId, response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });

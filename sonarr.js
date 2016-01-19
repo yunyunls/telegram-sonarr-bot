@@ -939,8 +939,18 @@ function handleSeriesMonitor(userId, monitorType) {
       }
 
       logger.info('user: %s, message: added series "%s"', userId, series.title);
-
-      bot.sendMessage(userId, 'Series `' + series.title + '` added', {
+      
+      if (isAdmin(userId) && (userId !== config.bot.owner)) {
+        bot.sendMessage(config.bot.owner, 'Series "' + series.title + '" added by ' + userId, {
+          'selective': 2,
+          'parse_mode': 'Markdown',
+          'reply_markup': {
+            'hide_keyboard': true
+          }
+        });        
+      }
+      
+      bot.sendMessage(userId, 'Series "' + series.title + '" added', {
         'selective': 2,
         'parse_mode': 'Markdown',
         'reply_markup': {

@@ -939,17 +939,17 @@ function handleSeriesMonitor(userId, monitorType) {
       }
 
       logger.info('user: %s, message: added series "%s"', userId, series.title);
-      
+
       if (isAdmin(userId) && (userId !== config.bot.owner)) {
-        bot.sendMessage(config.bot.owner, 'Series "' + series.title + '" added by ' + userId, {
+        bot.sendMessage(config.bot.owner, 'Series "' + series.title + '" added by ' + getTelegramName(userId), {
           'selective': 2,
           'parse_mode': 'Markdown',
           'reply_markup': {
             'hide_keyboard': true
           }
-        });        
+        });
       }
-      
+
       bot.sendMessage(userId, 'Series "' + series.title + '" added', {
         'selective': 2,
         'parse_mode': 'Markdown',
@@ -1188,5 +1188,14 @@ function clearCache(userId) {
  * get telegram name
  */
 function getTelegramName(user) {
-   return user.username || (user.first_name + (' ' + user.last_name || ''));
+  if (typeof user === 'object') {
+    return user.username || (user.first_name + (' ' + user.last_name || ''));
+  }
+
+  if (typeof user === 'number') {
+    var aclUser = _.filter(acl.allowedUsers, function(item) { return item.id === user; })[0];
+    return aclUser.username || (aclUser.first_name + (' ' + aclUser.last_name || ''));
+  }
+
+  return 'unknown user';
 }

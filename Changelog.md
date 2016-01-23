@@ -1,5 +1,10 @@
 ## Changelog
 
+### v0.3.0
+- Added series type and season folder options when adding a series
+- Minor code refactoring
+- Updated package version
+
 ### v0.2.2
 - Added `/help` command
 - Added `/library` command to search Sonarr library

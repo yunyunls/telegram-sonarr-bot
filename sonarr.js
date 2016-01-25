@@ -5,11 +5,19 @@ var _           = require('lodash');                    // https://www.npmjs.com
 var NodeCache   = require('node-cache');                // https://www.npmjs.com/package/node-cache
 var TelegramBot = require('node-telegram-bot-api');     // https://www.npmjs.com/package/node-telegram-bot-api
 
+/*
+ * libs
+ */
 var state  = require(__dirname + '/lib/state');         // handles command structure
 var logger = require(__dirname + '/lib/logger');        // logs to file and console
 var i18n   = require(__dirname + '/lib/lang');          // set up multilingual support
 var config = require(__dirname + '/lib/config');        // the concised configuration
 var acl    = require(__dirname + '/lib/acl');           // set up the acl file
+
+/*
+ * modules
+ */
+var SonarrMessage = require(__dirname + '/modules/SonarrMessage');
 
 /*
  * set up the telegram bot
@@ -32,84 +40,6 @@ bot.getMe().then(function(msg) {
 });
 
 /*
- * handle sonarr commands
- */
-bot.on('message', function(msg) {
-  var user    = msg.from;
-  var message = msg.text;
-
-  verifyUser(user.id);
-
-  var SonarrMessage = require(__dirname + '/modules/SonarrMessage');
-  var sonarrMessage = new SonarrMessage(bot, user, cache);
-
-  if (/^\/library\s?(.+)?$/g.test(message)) {
-    var searchText = /^\/library\s?(.+)?/g.exec(message)[1] || null;
-    return sonarrMessage.performLibrarySearch(searchText);
-  }
-
-  if(/^\/rss$/g.test(message)) {
-    verifyAdmin(user.id);
-    return sonarrMessage.performRssSync();
-  }
-
-  if(/^\/wanted$/g.test(message)) {
-    verifyAdmin(user.id);
-    return sonarrMessage.performWantedSearch();
-  }
-
-  if(/^\/refresh$/g.test(message)) {
-    verifyAdmin(user.id);
-    return sonarrMessage.performLibraryRefresh();
-  }
-
-  if (/^\/upcoming\s?(\d+)?$/g.test(message)) {
-    var futureDays = /^\/upcoming\s?(\d+)?/g.exec(message)[1] || 3;
-    return sonarrMessage.performCalendarSearch(futureDays);
-  }
-  /*
-   * /query command
-   */
-  if (/^\/[Qq](uery)? (.+)$/g.test(message)) {
-    var seriesName = /^\/[Qq](uery)? (.+)/g.exec(message)[2] || null;
-    return sonarrMessage.sendSeriesList(seriesName);
-  }
-
-  // get the current cache state
-  var currentState = cache.get('state' + user.id);
-
-  if (currentState === state.sonarr.PROFILE) {
-    logger.info('user: %s, message: choose the series %s', user.id, message);
-    return sonarrMessage.sendProfileList(message);
-  }
-
-  if (currentState === state.sonarr.MONITOR) {
-    logger.info('user: %s, message: choose the profile "%s"', user.id, message);
-    return sonarrMessage.sendMonitorList(message);
-  }
-
-  if (currentState === state.sonarr.TYPE) {
-    logger.info('user: %s, message: choose the type "%s"', user.id, message);
-    return sonarrMessage.sendTypeList(message);
-  }
-
-  if (currentState === state.sonarr.FOLDER) {
-    logger.info('user: %s, message: choose the folder "%s"', user.id, message);
-    return sonarrMessage.sendFolderList(message);
-  }
-
-  if (currentState === state.sonarr.SEASON_FOLDER) {
-    logger.info('user: %s, message: choose the season folder "%s"', user.id, message);
-    return sonarrMessage.sendSeasonFolderList(message);
-  }
-
-  if (currentState === state.sonarr.ADD_SERIES) {
-    return sonarrMessage.sendAddSeries(message);
-  }
-
-});
-
-/*
  * handle start command
  */
 bot.onText(/\/start/, function(msg) {
@@ -127,7 +57,6 @@ bot.onText(/\/start/, function(msg) {
   response.push('`/library [series]` search Sonarr library');
   response.push('/upcoming shows upcoming episodes');
   response.push('/clear clear all previous commands');
-  response.push('/help shows this message');
 
   if (isAdmin(fromId)) {
     response.push('\n*Admin commands:*');
@@ -139,7 +68,91 @@ bot.onText(/\/start/, function(msg) {
     response.push('/unrevoke un-revoke user from bot');
   }
 
-  bot.sendMessage(fromId, response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
+  return bot.sendMessage(fromId, response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
+});
+
+/*
+ * handle sonarr commands
+ */
+bot.on('message', function(msg) {
+  var user    = msg.from;
+  var message = msg.text;
+
+  var sonarr = new SonarrMessage(bot, user, cache);
+
+  if (/^\/library\s?(.+)?$/g.test(message)) {
+    var searchText = /^\/library\s?(.+)?/g.exec(message)[1] || null;
+    return sonarr.performLibrarySearch(searchText);
+  }
+
+  if(/^\/rss$/g.test(message)) {
+    verifyAdmin(user.id);
+    return sonarr.performRssSync();
+  }
+
+  if(/^\/wanted$/g.test(message)) {
+    verifyAdmin(user.id);
+    return sonarr.performWantedSearch();
+  }
+
+  if(/^\/refresh$/g.test(message)) {
+    verifyAdmin(user.id);
+    return sonarr.performLibraryRefresh();
+  }
+
+  if (/^\/upcoming\s?(\d+)?$/g.test(message)) {
+    verifyUser(user.id);
+    var futureDays = /^\/upcoming\s?(\d+)?/g.exec(message)[1] || 3;
+    return sonarr.performCalendarSearch(futureDays);
+  }
+
+  /*
+   * /query command
+   */
+  if (/^\/[Qq](uery)? (.+)$/g.test(message)) {
+    verifyUser(user.id);
+    var seriesName = /^\/[Qq](uery)? (.+)/g.exec(message)[2] || null;
+    return sonarr.sendSeriesList(seriesName);
+  }
+
+  // get the current cache state
+  var currentState = cache.get('state' + user.id);
+
+  if (currentState === state.sonarr.PROFILE) {
+    verifyUser(user.id);
+    logger.info('user: %s, message: choose the series %s', user.id, message);
+    return sonarr.sendProfileList(message);
+  }
+
+  if (currentState === state.sonarr.MONITOR) {
+    verifyUser(user.id);
+    logger.info('user: %s, message: choose the profile "%s"', user.id, message);
+    return sonarr.sendMonitorList(message);
+  }
+
+  if (currentState === state.sonarr.TYPE) {
+    verifyUser(user.id);
+    logger.info('user: %s, message: choose the type "%s"', user.id, message);
+    return sonarr.sendTypeList(message);
+  }
+
+  if (currentState === state.sonarr.FOLDER) {
+    verifyUser(user.id);
+    logger.info('user: %s, message: choose the folder "%s"', user.id, message);
+    return sonarr.sendFolderList(message);
+  }
+
+  if (currentState === state.sonarr.SEASON_FOLDER) {
+    verifyUser(user.id);
+    logger.info('user: %s, message: choose the season folder "%s"', user.id, message);
+    return sonarr.sendSeasonFolderList(message);
+  }
+
+  if (currentState === state.sonarr.ADD_SERIES) {
+    verifyUser(user.id);
+    return sonarr.sendAddSeries(message);
+  }
+
 });
 
 /*
@@ -175,13 +188,14 @@ bot.onText(/\/auth (.+)/, function(msg, match) {
     promptOwnerConfig(fromId);
   }
 
-  message.push('You have been authorized.');
-  message.push('Type /start to begin.');
-  bot.sendMessage(fromId, message.join('\n'));
-
   if (config.bot.owner) {
     bot.sendMessage(config.bot.owner, getTelegramName(msg.from) + ' has been granted access.');
   }
+
+  message.push('You have been authorized.');
+  message.push('Type /start to begin.');
+
+  return bot.sendMessage(fromId, message.join('\n'));
 });
 
 /*
@@ -194,10 +208,10 @@ bot.onText(/\/users/, function(msg) {
 
   var response = ['*Allowed Users:*'];
   _.forEach(acl.allowedUsers, function(n, key) {
-    response.push('*' + (key + 1) + '*) ' + getTelegramName(n));
+    response.push('➸ ' + getTelegramName(n));
   });
 
-  bot.sendMessage(fromId, response.join('\n'), {
+  return bot.sendMessage(fromId, response.join('\n'), {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
@@ -223,7 +237,7 @@ bot.onText(/\/revoke/, function(msg) {
       'selective': 2,
     };
 
-    bot.sendMessage(fromId, message, opts);
+    return bot.sendMessage(fromId, message, opts);
   }
 
   var keyboardList = [], keyboardRow = [], revokeList = [];
@@ -234,7 +248,7 @@ bot.onText(/\/revoke/, function(msg) {
       'userId': n.id,
       'keyboardValue': getTelegramName(n)
     });
-    response.push('*' + (key + 1) + '*) ' + getTelegramName(n));
+    response.push('➸ ' + getTelegramName(n));
 
     keyboardRow.push(getTelegramName(n));
     if (keyboardRow.length === 2) {
@@ -254,7 +268,7 @@ bot.onText(/\/revoke/, function(msg) {
   cache.set('state' + fromId, state.admin.REVOKE);
   cache.set('revokeUserList' + fromId, revokeList);
 
-  bot.sendMessage(fromId, response.join('\n'), {
+  return bot.sendMessage(fromId, response.join('\n'), {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
@@ -275,7 +289,7 @@ bot.onText(/\/unrevoke/, function(msg) {
   if (!acl.revokedUsers.length) {
     var message = 'There aren\'t any revoked users.';
 
-    bot.sendMessage(fromId, message, {
+    return bot.sendMessage(fromId, message, {
       'disable_web_page_preview': true,
       'parse_mode': 'Markdown',
       'selective': 2,
@@ -291,7 +305,7 @@ bot.onText(/\/unrevoke/, function(msg) {
       'keyboardValue': getTelegramName(n)
     });
 
-    response.push('*' + (key + 1) + '*) ' + getTelegramName(n));
+    response.push('➸ ' + getTelegramName(n));
 
     keyboardRow.push(getTelegramName(n));
     if (keyboardRow.length == 2) {
@@ -310,7 +324,7 @@ bot.onText(/\/unrevoke/, function(msg) {
   cache.set('state' + fromId, state.admin.UNREVOKE);
   cache.set('unrevokeUserList' + fromId, revokeList);
 
-  bot.sendMessage(fromId, response.join('\n'), {
+  return bot.sendMessage(fromId, response.join('\n'), {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
@@ -330,7 +344,7 @@ bot.onText(/\/clear/, function(msg) {
   clearCache(fromId);
   logger.info('user: %s, message: \'/clear\' command successfully executed', fromId);
 
-  bot.sendMessage(fromId, 'All previously sent commands have been cleared, yey!', {
+  return bot.sendMessage(fromId, 'All previously sent commands have been cleared, yey!', {
     'reply_markup': {
       'hide_keyboard': true
     }
@@ -354,7 +368,7 @@ function handleRevokeUser(userId, revokedUser) {
   cache.set('state' + userId, state.admin.REVOKE_CONFIRM);
   cache.set('revokedUserName' + userId, revokedUser);
 
-  bot.sendMessage(userId, response.join('\n'), {
+  return bot.sendMessage(userId, response.join('\n'), {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
@@ -394,13 +408,11 @@ function handleRevokeUserConfirm(userId, revokedConfirm) {
 
   message = 'Access for ' + revokedUser + ' has been revoked.';
 
-  bot.sendMessage(userId, message, {
+  return bot.sendMessage(userId, message, {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2
   });
-
-  clearCache(userId);
 }
 
 /*
@@ -424,7 +436,7 @@ function handleUnRevokeUser(userId, revokedUser) {
     one_time_keyboard: true
   };
 
-  bot.sendMessage(userId, response.join('\n'), {
+  return bot.sendMessage(userId, response.join('\n'), {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
@@ -461,13 +473,11 @@ function handleUnRevokeUserConfirm(userId, revokedConfirm) {
 
   message = 'Access for ' + revokedUser + ' has been unrevoked.';
 
-  bot.sendMessage(userId, message, {
+  return bot.sendMessage(userId, message, {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
   });
-
-  clearCache(userId);
 }
 
 /*
@@ -539,7 +549,7 @@ function promptOwnerConfig(userId) {
     var message = ['Your User ID: ' + userId];
     message.push('Please add your User ID to the config file field labeled \'owner\'.');
     message.push('Please restart the bot once this has been updated.');
-    bot.sendMessage(userId, message.join('\n'));
+    return bot.sendMessage(userId, message.join('\n'));
   }
 }
 
@@ -547,10 +557,8 @@ function promptOwnerConfig(userId) {
  * handle removing the custom keyboard
  */
 function replyWithError(userId, err) {
-
   logger.warn('user: %s message: %s', userId, err.message);
-
-  bot.sendMessage(userId, '*Oh no!* ' + err, {
+  return bot.sendMessage(userId, '*Oh no!* ' + err, {
     'parse_mode': 'Markdown',
     'reply_markup': {
       'hide_keyboard': true
@@ -584,11 +592,9 @@ function getTelegramName(user) {
   if (typeof user === 'object') {
     return user.username || (user.first_name + (' ' + user.last_name || ''));
   }
-
   if (typeof user === 'number') {
     var aclUser = _.filter(acl.allowedUsers, function(item) { return item.id === user; })[0];
     return aclUser.username || (aclUser.first_name + (' ' + aclUser.last_name || ''));
   }
-
   return 'unknown user';
 }

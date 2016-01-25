@@ -158,7 +158,7 @@ SonarrMessage.prototype.performCalendarSearch = function(futureDays) {
   var fromDate = moment().toISOString();
   var toDate = moment().add(futureDays, 'day').toISOString();
 
-  logger.info('user: %s, message: sent \'/calendar\' command from %s to %s', self.username, fromDate, toDate);
+  logger.info('user: %s, message: sent \'/upcoming\' command from %s to %s', self.username, fromDate, toDate);
 
   self.sonarr.get('calendar', { 'start': fromDate, 'end': toDate})
   .then(function (episode) {

@@ -550,27 +550,25 @@ SonarrMessage.prototype.sendAddSeries = function(seasonFolderName) {
 
   switch (monitor.type) {
     case 'future':
-      postOpts.addOptions = {};
-      postOpts.addOptions.ignoreEpisodesWithFiles = true;
-      postOpts.addOptions.ignoreEpisodesWithoutFiles = true;
+      postOpts.ignoreEpisodesWithFiles = true;
+      postOpts.ignoreEpisodesWithoutFiles = true;
       break;
     case 'all':
-      postOpts.addOptions = {};
-      postOpts.addOptions.ignoreEpisodesWithFiles = false;
-      postOpts.addOptions.ignoreEpisodesWithoutFiles = false;
+      postOpts.ignoreEpisodesWithFiles = false;
+      postOpts.ignoreEpisodesWithoutFiles = false;
+
+      _.each(series.seasons, function(season) {
+        season.monitored = true;
+      });
       break;
     case 'none':
       _.each(series.seasons, function(season) {
-        if (season.seasonNumber >= lastSeason.seasonNumber + 1) {
-          season.monitored = true;
-        } else {
-          season.monitored = false;
-        }
+        season.monitored = false;
       });
       break;
     case 'latest':
       _.each(series.seasons, function(season) {
-        if (season.seasonNumber >= lastSeason.seasonNumber) {
+        if (season.seasonNumber === lastSeason.seasonNumber) {
           season.monitored = true;
         } else {
           season.monitored = false;
@@ -579,17 +577,10 @@ SonarrMessage.prototype.sendAddSeries = function(seasonFolderName) {
       break;
     case 'first':
       _.each(series.seasons, function(season) {
-        if (season.seasonNumber >= lastSeason.seasonNumber + 1) {
+        if (season.seasonNumber === firstSeason.seasonNumber) {
           season.monitored = true;
         } else {
           season.monitored = false;
-        }
-      });
-
-      // update first season
-      _.each(series.seasons, function(season) {
-        if (season.seasonNumber === firstSeason.seasonNumber) {
-          season.monitored = !season.monitored;
         }
       });
       break;
@@ -609,7 +600,7 @@ SonarrMessage.prototype.sendAddSeries = function(seasonFolderName) {
 
     logger.info('user: %s, message: added series "%s"', self.username, series.title);
 
-    if (self._isBotAdmin()) {
+    if (self._isBotAdmin() && self.adminId !== self.user.id) {
       self.bot.sendMessage(self.user.id, 'Series "' + series.title + '" added by ' + self.username, {
         'selective': 2,
         'parse_mode': 'Markdown',

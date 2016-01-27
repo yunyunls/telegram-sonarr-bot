@@ -558,7 +558,11 @@ SonarrMessage.prototype.sendAddSeries = function(seasonFolderName) {
       postOpts.ignoreEpisodesWithoutFiles = false;
 
       _.each(series.seasons, function(season) {
-        season.monitored = true;
+        if (season.seasonNumber !== 0) {
+          season.monitored = true;
+        } else {
+          season.monitored = false;
+        }
       });
       break;
     case 'none':

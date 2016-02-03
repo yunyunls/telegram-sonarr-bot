@@ -148,6 +148,7 @@ docker run --name telegram-sonarr-bot \
   -e TELEGRAM_BOTTOKEN=
   -e BOT_PASSWORD=
   -e BOT_OWNER=
+  -e BOT_NOTIFYID=
   -e BOT_MAXRESULTS=
   -e SONARR_HOST=
   -e SONARR_APIKEY=

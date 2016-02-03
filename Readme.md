@@ -42,6 +42,7 @@ Telegram:
 Bot:
 - **password** the password to access the bot
 - **owner** your Telegram user ID. (you can fill this in later)
+- **notifyId** Telegram ID used for notifications. (optional; you can fill this in later)
 
 Sonarr:
 - **hostname**: hostname where Sonarr runs (required)

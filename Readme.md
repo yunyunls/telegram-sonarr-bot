@@ -42,6 +42,7 @@ Telegram:
 Bot:
 - **password** the password to access the bot
 - **owner** your Telegram user ID. (you can fill this in later)
+- **notifyId** Telegram ID used for notifications. (optional; you can fill this in later)
 
 Sonarr:
 - **hostname**: hostname where Sonarr runs (required)
@@ -126,6 +127,21 @@ Send the monitor type using the custom keyboard
 
 If everything goes well, you'll see a text from the bot saying the series was added.
 
+### Notifications
+Sonarr can be setup to send notifications to a user or a group chat when new content is added.  
+
+* In Sonarr go to `Settings` > `Connect` > `+` > `Custom Script`
+* In the Name field enter `Telegram`
+* In the Path field enter the full path to your node.js installation i.e. `C:\Program Files\nodejs\node.exe`
+* In the Arguments field enter the full path to `sonarr_notify.js` i.e `C:\bots\telegram-sonarr-bot\sonarr_notify.js`
+* Start the bot by running `node sonarr.js`
+* Open a new chat or group chat with the bot and type `/cid` 
+* Note the Chat ID
+* Open `config.js` and enter the Chat ID next to `notifyId`
+* Restart the bot
+* The specified chat will now begin receiving notifications for newly added content
+
+
 ### Additional commands
 * `/upcoming` shows upcoming episodes, has a day parameter, defaults to 3 days
 * `/library` search Sonarr library for existing shows
@@ -139,6 +155,7 @@ If everything goes well, you'll see a text from the bot saying the series was ad
 * `/users` list users
 * `/revoke` revoke user from bot
 * `/unrevoke` un-revoke user from bot
+* `/cid` gets current chat id
 
 ## Docker
 Alternatively you may use Docker to start the bot
@@ -147,6 +164,7 @@ docker run --name telegram-sonarr-bot \
   -e TELEGRAM_BOTTOKEN=
   -e BOT_PASSWORD=
   -e BOT_OWNER=
+  -e BOT_NOTIFYID=
   -e BOT_MAXRESULTS=
   -e SONARR_HOST=
   -e SONARR_APIKEY=

@@ -107,6 +107,17 @@ bot.on('message', function(msg) {
   }
 
   /*
+   * /cid command
+   * Gets the current chat id
+   * Used for configuring notifications and similar tasks
+   */
+  if (/^\/cid$/g.test(message)) {
+    verifyAdmin(user.id);
+    logger.info('user: %s, message: queried Chat ID %s', user.id, msg.chat.id);
+    return bot.sendMessage(msg.chat.id, 'The current Chat ID: ' + msg.chat.id);
+  }
+  
+  /*
    * /query command
    */
   if (/^\/[Qq](uery)? (.+)$/g.test(message)) {

@@ -137,7 +137,7 @@ Sonarr can be setup to send notifications to a user or a group chat when new con
 * Start the bot by running `node sonarr.js`
 * Open a new chat or group chat with the bot and type `/cid` 
 * Note the Chat ID
-* Open `config.js` and enter the Chat ID next to `notifyId`
+* Open `config.json` and enter the Chat ID next to `notifyId`
 * Restart the bot
 * The specified chat will now begin receiving notifications for newly added content
 

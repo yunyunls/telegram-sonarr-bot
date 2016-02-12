@@ -69,11 +69,18 @@ SonarrMessage.prototype.performLibrarySearch = function(searchText) {
 
     if (response.length > 50) {
       var splitReponse = _.chunk(response, 50);
-      splitReponse.sort();
-      _.forEach(splitReponse, function(n) {
-       n.sort();
-       return self._sendMessage(n.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
-      });
+      splitReponse.sort()
+      var i = 0;
+      var libraryLoop = setInterval(function () {
+        var n = splitReponse[i];
+        if (n === undefined) {
+          clearInterval(libraryLoop);
+        } else {
+          n.sort();
+          self._sendMessage(n.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
+        }
+        i = i + 1;
+      }, 200);   
     } else {
       return self._sendMessage(response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
     }

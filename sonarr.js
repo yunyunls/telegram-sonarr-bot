@@ -600,12 +600,15 @@ function clearCache(userId) {
  * get telegram name
  */
 function getTelegramName(user) {
+  var lastname = '';
   if (typeof user === 'object') {
-    return user.username || (user.first_name + (' ' + user.last_name || ''));
+    lastname = (user.last_name !== undefined) ? ' ' + user.last_name : '';
+    return user.username || (user.first_name + lastname);
   }
   if (typeof user === 'number') {
     var aclUser = _.filter(acl.allowedUsers, function(item) { return item.id === user; })[0];
-    return aclUser.username || (aclUser.first_name + (' ' + aclUser.last_name || ''));
+    lastname = (aclUser.last_name !== undefined) ? ' ' + aclUser.last_name : '';
+    return aclUser.username || (aclUser.first_name + lastname);
   }
   return 'unknown user';
 }

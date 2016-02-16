@@ -97,12 +97,12 @@ bot.on('message', function(msg) {
     var futureDays = /^\/upcoming\s?(\d+)?/g.exec(message)[1] || 3;
     return sonarr.performCalendarSearch(futureDays);
   }
-  
-  if (/^\/sub\s?(.+)?$/g.test(message)) {
-    searchText = /^\/sub\s?(.+)?/g.exec(message)[1] || null;
-    return sonarr.performLibrarySearch(searchText);
-  }
-  
+
+  /*
+   * /cid command
+   * Gets the current chat id
+   * Used for configuring notifications and similar tasks
+   */
   if (/^\/cid$/g.test(message)) {
     verifyAdmin(user.id);
     logger.info('user: %s, message: queried Chat ID %s', user.id, msg.chat.id);

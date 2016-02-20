@@ -20,7 +20,7 @@ var episode = process.env.sonarr_episodefile_episodenumbers || 'Unknown Episode'
 var airdate = process.env.sonarr_episodefile_episodeairdates || 'Unknown Air Dates';
 var airdateutc = process.env.sonarr_episodefile_episodeairdatesutc || 'Unknown UTC Air Dates';
 var quality = process.env.sonarr_episodefile_quality || 'Unknown Quality';
-var qualtiyversion = process.env.sonarr_episodefile_quality_version || 'Unknown Quality Version';
+var qualityversion = process.env.sonarr_episodefile_quality_version || 'Unknown Quality Version';
 var releasegroup = process.env.sonarr_episodefile_releasegroup || 'Unknown Release Group';
 var source  = process.env.sonarr_episodefile_scenename || 'Unknown Name';
 var sourcepath = process.env.sonarr_episodefile_sourcepath || 'Unknown Source Path';
@@ -49,7 +49,7 @@ message.push('*Size:* ' + fileSizeInMegaBytes + ' MB');
 //message.push('*Episode ID:* ' + episodefile_id);
 //message.push('*Rel Path:* ' + episodefile_relativepath);
 //message.push('*Air Date UTC:* ' + airdateutc);
-//message.push('*Quality Version:* ' + qualtiyversion);
+//message.push('*Quality Version:* ' + qualityversion);
 //message.push('*Release Group:* ' + releasegroup);
 //message.push('*Source:* ' + source);
 //message.push('*Source Path:* ' + sourcepath);

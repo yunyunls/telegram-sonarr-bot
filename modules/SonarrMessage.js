@@ -172,11 +172,17 @@ SonarrMessage.prototype.performCalendarSearch = function(futureDays) {
     if (!episode.length) {
       throw new Error('Nothing in the calendar for the specified time.');
     }
-
+    
+    var lastDate = null;
     var response = [];
     _.forEach(episode, function(n, key) {
       var done = (n.hasFile ? ' - *Done*' : '');
-      response.push(n.series.title + ' - '  + n.airDate + done);
+
+      // Add an empty line to break list of multiple days
+      if(lastDate != null && n.airDate != lastDate) response.push(' ');
+
+      response.push(n.airDate + ' - ' + n.series.title + done);
+      lastDate = n.airDate;
     });
 
     logger.info('user: %s, message: found the following series %s', self.username, response.join(','));

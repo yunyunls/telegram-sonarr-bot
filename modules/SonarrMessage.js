@@ -77,12 +77,12 @@ SonarrMessage.prototype.performLibrarySearch = function(searchText) {
           clearInterval(libraryLoop);
         } else {
           n.sort();
-          self._sendMessage(n.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
+          self._sendMessage(n.join('\n'), []);
         }
         i = i + 1;
-      }, 200);   
+      }, 200);
     } else {
-      return self._sendMessage(response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
+      return self._sendMessage(response.join('\n'), []);
     }
 
   }).catch(function(error) {
@@ -172,7 +172,7 @@ SonarrMessage.prototype.performCalendarSearch = function(futureDays) {
     if (!episode.length) {
       throw new Error('Nothing in the calendar for the specified time.');
     }
-    
+
     var lastDate = null;
     var response = [];
     _.forEach(episode, function(n, key) {

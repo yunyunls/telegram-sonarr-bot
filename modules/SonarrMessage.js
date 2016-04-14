@@ -185,9 +185,9 @@ SonarrMessage.prototype.performCalendarSearch = function(futureDays) {
       lastDate = n.airDate;
     });
 
-    logger.info('user: %s, message: found the following series %s', self.username, response.join(','));
+    logger.info('#1 user: %s, message: found the following series %s', self.username, response.join(','));
 
-    return self._sendMessage(response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
+    return self._sendMessage(response.join('\n'), []);
   })
   .catch(function(error) {
     return self._sendMessage(error);
@@ -241,7 +241,7 @@ SonarrMessage.prototype.sendSeriesList = function(seriesName) {
 
     response.push(i18n.__('selectFromMenu'));
 
-    logger.info('user: %s, message: found the following series %s', self.username, keyboardList.join(','));
+    logger.info('#2 user: %s, message: found the following series %s', self.username, keyboardList.join(','));
 
     // set cache
     self.cache.set('seriesList' + self.user.id, seriesList);
@@ -319,7 +319,7 @@ SonarrMessage.prototype.sendProfileList = function(displayName) {
 
       response.push(i18n.__('selectFromMenu'));
 
-      logger.info('user: %s, message: found the following profiles %s', self.username, keyboardList.join(','));
+      logger.info('#3 user: %s, message: found the following profiles %s', self.username, keyboardList.join(','));
 
       // set cache
       self.cache.set('state' + self.user.id, state.sonarr.MONITOR);

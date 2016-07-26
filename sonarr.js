@@ -108,7 +108,7 @@ bot.on('message', function(msg) {
     logger.info('user: %s, message: queried Chat ID %s', user.id, msg.chat.id);
     return bot.sendMessage(msg.chat.id, 'The current Chat ID: ' + msg.chat.id);
   }
-  
+
 
   /*
    * /query command
@@ -121,6 +121,12 @@ bot.on('message', function(msg) {
 
   // get the current cache state
   var currentState = cache.get('state' + user.id);
+
+  if (currentState === state.sonarr.CONFIRM) {
+    verifyUser(user.id);
+    logger.info('user: %s, message: confirm the series %s', user.id, message);
+    return sonarr.confirmShowSelect(message);
+  }
 
   if (currentState === state.sonarr.PROFILE) {
     verifyUser(user.id);

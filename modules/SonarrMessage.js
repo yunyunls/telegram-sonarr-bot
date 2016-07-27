@@ -221,17 +221,27 @@ SonarrMessage.prototype.sendSeriesList = function(seriesName) {
     var response = ['*Found ' + series.length + ' series *'];
 
     _.forEach(series, function(n, key) {
+
+      var imageCover = null;
+      _.forEach(n.images, function(image, index){
+        if(image.coverType == 'poster'){
+          imageCover = image.url;
+        }
+      });
+
       var id = key + 1;
       var keyboardValue = n.title + (n.year ? ' - ' + n.year : '');
 
       seriesList.push({
         'id': id,
         'title': n.title,
+        'plot': n.overview,
         'year': n.year,
         'tvdbId': n.tvdbId,
         'titleSlug': n.titleSlug,
         'seasons': n.seasons,
-        'keyboardValue': keyboardValue
+        'keyboardValue': keyboardValue,
+        'coverUrl': imageCover
       });
 
       keyboardList.push([keyboardValue]);
@@ -245,7 +255,7 @@ SonarrMessage.prototype.sendSeriesList = function(seriesName) {
 
     // set cache
     self.cache.set('seriesList' + self.user.id, seriesList);
-    self.cache.set('state' + self.user.id, state.sonarr.PROFILE);
+    self.cache.set('state' + self.user.id, state.sonarr.CONFIRM);
 
     return self._sendMessage(response.join('\n'), keyboardList);
   })
@@ -254,7 +264,7 @@ SonarrMessage.prototype.sendSeriesList = function(seriesName) {
   });
 };
 
-SonarrMessage.prototype.sendProfileList = function(displayName) {
+SonarrMessage.prototype.confirmShowSelect = function(displayName) {
   var self = this;
 
   var seriesList = self.cache.get('seriesList' + self.user.id);
@@ -280,11 +290,63 @@ SonarrMessage.prototype.sendProfileList = function(displayName) {
       if (existingSeries) {
         throw new Error('Series already exists and is already being tracked by Sonarr');
       }
-      workflow.emit('getSonarrProfiles');
+      workflow.emit('confirmShow');
     }).catch(function(error) {
       return self._sendMessage(error);
     });
   });
+
+  // check for existing series on sonarr
+  workflow.on('confirmShow', function () {
+    self.sonarr.get('series').then(function(result) {
+      logger.info('user: %s, message: conform correct show: ' + series.keyboardValue, self.username);
+
+      var keyboardList = [['Yes'], ['No']];
+
+      var response = ['*' + series.title + ' (' + series.year + ')*\n'];
+
+      response.push(series.plot + '\n');
+      response.push('*Is this show correct?*');
+      response.push('➸ Yes');
+      response.push('➸ No');
+
+      // Add cover to message (if available)
+      if(series.coverUrl !== null){
+        response.push('\n[Poster!](' + series.coverUrl + ')');
+      }
+
+      // set cache
+      self.cache.set('state' + self.user.id, state.sonarr.PROFILE);
+      self.cache.set('seriesId' + self.user.id, series.id);
+
+      return self._sendMessage(response.join('\n'), keyboardList);
+
+    }).catch(function(error) {
+      return self._sendMessage(error);
+    });
+  });
+
+  /**
+   * Initiate the workflow
+   */
+  workflow.emit('checkSonarrSeries');
+};
+
+SonarrMessage.prototype.sendProfileList = function(displayName) {
+  var self = this;
+
+  var seriesId = self.cache.get('seriesId' + self.user.id);
+
+  if (!seriesId) {
+    return self._sendMessage(new Error('Something went wrong, try searching again'));
+  }
+
+  if(displayName == 'No'){
+    return self._sendMessage(new Error('Aborted'));
+  }
+
+  // use workflow to run async tasks
+  var workflow = new (require('events').EventEmitter)();
 
   // get the sonarr profiles
   workflow.on('getSonarrProfiles', function () {
@@ -323,7 +385,6 @@ SonarrMessage.prototype.sendProfileList = function(displayName) {
 
       // set cache
       self.cache.set('state' + self.user.id, state.sonarr.MONITOR);
-      self.cache.set('seriesId' + self.user.id, series.id);
       self.cache.set('seriesProfileList' + self.user.id, profileList);
 
       return self._sendMessage(response.join('\n'), keyboardList);
@@ -336,7 +397,7 @@ SonarrMessage.prototype.sendProfileList = function(displayName) {
   /**
    * Initiate the workflow
    */
-  workflow.emit('checkSonarrSeries');
+  workflow.emit('getSonarrProfiles');
 };
 
 SonarrMessage.prototype.sendMonitorList = function(profileName) {
@@ -664,7 +725,7 @@ SonarrMessage.prototype._sendMessage = function(message, keyboard) {
     };
   } else {
     options = {
-      'disable_web_page_preview': true,
+      // 'disable_web_page_preview': true,
       'parse_mode': 'Markdown',
       'selective': 2,
       'reply_markup': JSON.stringify( { keyboard: keyboard, one_time_keyboard: true })

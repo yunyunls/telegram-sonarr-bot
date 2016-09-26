@@ -33,7 +33,7 @@ var cache = new NodeCache({ stdTTL: 120, checkperiod: 150 });
  * get the bot name
  */
 bot.getMe().then(function(msg) {
-  logger.info('sonarr bot %s initialized', msg.username);
+  logger.info(i18n.__('logBotInitialisation'), msg.username);
 })
 .catch(function(err) {
   throw new Error(err);

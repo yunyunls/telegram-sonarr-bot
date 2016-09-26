@@ -617,23 +617,23 @@ function getTelegramName(user) {
  */
 function sendCommands(fromId) {
   var response = ['Hello ' + getTelegramName(fromId) + '!'];
-  response.push('Below is a list of commands you have access to:');
-  response.push('\n*General commands:*');
-  response.push('/start to start this bot');
-  response.push('/help to for this list of commands');
-  response.push('`/query [series]` add new TV series');
-  response.push('`/library [series]` search Sonarr library');
-  response.push('/upcoming shows upcoming episodes');
-  response.push('/clear clear all previous commands');
+  response.push(i18n.__('botChatHelp_1'));
+  response.push(i18n.__('botChatHelp_2'));
+  response.push(i18n.__('botChatHelp_3'));
+  response.push(i18n.__('botChatHelp_4'));
+  response.push(i18n.__('botChatHelp_5'));
+  response.push(i18n.__('botChatHelp_6'));
+  response.push(i18n.__('botChatHelp_7'));
+  response.push(i18n.__('botChatHelp_8'));
 
   if (isAdmin(fromId)) {
-    response.push('\n*Admin commands:*');
-    response.push('/wanted search all missing/wanted episodes');
-    response.push('/rss perform an RSS Sync');
-    response.push('/refresh refreshes all series');
-    response.push('/users list users');
-    response.push('/revoke revoke user from bot');
-    response.push('/unrevoke un-revoke user from bot');
+    response.push(i18n.__('botChatHelp_9'));
+    response.push(i18n.__('botChatHelp_10'));
+    response.push(i18n.__('botChatHelp_11'));
+    response.push(i18n.__('botChatHelp_12'));
+    response.push(i18n.__('botChatHelp_13'));
+    response.push(i18n.__('botChatHelp_14'));
+    response.push(i18n.__('botChatHelp_15'));
   }
 
   return bot.sendMessage(fromId, response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });

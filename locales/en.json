@@ -1,4 +1,5 @@
 {
+  "logUserStartCommand": "user: %s, message: sent '/starts' command",
   "logBotInitialisation": "sonarr bot %s initialized",
   "logUserHelpCommand": "user: %s, message: sent 'help' command",
   "hello": "Hello",

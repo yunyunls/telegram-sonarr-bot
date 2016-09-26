@@ -47,7 +47,7 @@ bot.onText(/\/start/, function(msg) {
 
   verifyUser(fromId);
 
-  logger.info('user: %s, message: sent \'/start\' command', fromId);
+  logger.info(i18n.__('logUserStartCommand'), fromId);
   sendCommands(fromId);
 });
 

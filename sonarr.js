@@ -59,7 +59,7 @@ bot.onText(/\/help/, function(msg) {
 
   verifyUser(fromId);
 
-  logger.info(i18n.__('logUserHelpCommand'), fromId);
+  logger.info(i18n.__('logUserHelpCommand', fromId));
   sendCommands(fromId);
 });
 
@@ -105,8 +105,8 @@ bot.on('message', function(msg) {
    */
   if (/^\/cid$/g.test(message)) {
     verifyAdmin(user.id);
-    logger.info('user: %s, message: queried Chat ID %s', user.id, msg.chat.id);
-    return bot.sendMessage(msg.chat.id, 'The current Chat ID: ' + msg.chat.id);
+    logger.info(i18n.__('logUserCidCommand', user.id, msg.chat.id));
+    return bot.sendMessage(msg.chat.id, i18n.__('botChatCid', msg.chat.id));
   }
 
 
@@ -124,13 +124,13 @@ bot.on('message', function(msg) {
 
   if (currentState === state.sonarr.CONFIRM) {
     verifyUser(user.id);
-    logger.info('user: %s, message: confirm the series %s', user.id, message);
+    logger.info(i18n.__('botChatQuerySeriesConfirm', user.id, message));
     return sonarr.confirmShowSelect(message);
   }
 
   if (currentState === state.sonarr.PROFILE) {
     verifyUser(user.id);
-    logger.info('user: %s, message: choose the series %s', user.id, message);
+    logger.info(i18n.__('botChatQuerySeriesChoose', user.id, message));
     return sonarr.sendProfileList(message);
   }
 

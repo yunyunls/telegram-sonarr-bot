@@ -1,4 +1,5 @@
 {
+  "logUserStartCommand": "user: %s, message: sent '/starts' command",
   "logBotInitialisation": "sonarr bot %s initialized",
   "hello": "Hello",
   "notAuthorized": "You are not authorized to use this bot.\n`/auth [password]` to authorize.",

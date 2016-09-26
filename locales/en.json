@@ -1,5 +1,6 @@
 {
   "logBotInitialisation": "sonarr bot %s initialized",
+  "logUserHelpCommand": "user: %s, message: sent 'help' command",
   "hello": "Hello",
   "notAuthorized": "You are not authorized to use this bot.\n`/auth [password]` to authorize.",
   "adminOnly": "Only the admin can use this feature.",

@@ -59,7 +59,7 @@ bot.onText(/\/help/, function(msg) {
 
   verifyUser(fromId);
 
-  logger.info('user: %s, message: sent \'/help\' command', fromId);
+  logger.info(i18n.__('logUserHelpCommand'), fromId);
   sendCommands(fromId);
 });
 

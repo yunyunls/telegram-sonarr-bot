@@ -122,6 +122,26 @@ bot.on('message', function(msg) {
   // get the current cache state
   var currentState = cache.get('state' + user.id);
 
+  if (currentState === state.admin.REVOKE) {
+      verifyUser(user.id);
+      return handleRevokeUser(user.id, message);
+  }
+  
+  if (currentState === state.admin.REVOKE_CONFIRM) {
+      verifyUser(user.id);
+      return handleRevokeUserConfirm(user.id, message);
+  }
+  
+  if (currentState === state.admin.UNREVOKE) {
+      verifyUser(user.id);
+      return handleUnRevokeUser(user.id, message);
+  }
+  
+  if (currentState === state.admin.UNREVOKE_CONFIRM) {
+      verifyUser(user.id);
+      return handleUnRevokeUserConfirm(user.id, message);
+  }
+  
   if (currentState === state.sonarr.CONFIRM) {
     verifyUser(user.id);
     logger.info(i18n.__('botChatQuerySeriesConfirm', user.id, message));

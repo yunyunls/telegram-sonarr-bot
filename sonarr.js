@@ -366,12 +366,12 @@ bot.onText(/\/clear/, function(msg) {
  */
 function handleRevokeUser(userId, revokedUser) {
 
-  logger.info('user: %s, message: selected revoke user %s', userId, revokedUser);
+  logger.info(i18n.__('logRevokeUserSelected'),userId, revokedUser);
 
   var keyboardList = [];
-  var response = ['Are you sure you want to revoke access to ' + revokedUser + '?'];
-  keyboardList.push(['NO']);
-  keyboardList.push(['yes']);
+  var response = [i18n.__('botChatRevokeConfirmation', revokedUser)];
+  keyboardList.push([i18n.__('globalNo')]);
+  keyboardList.push([i18n.__('globalYes')]);
 
   // set cache
   cache.set('state' + userId, state.admin.REVOKE_CONFIRM);
@@ -396,7 +396,7 @@ function handleRevokeUserConfirm(userId, revokedConfirm) {
   var opts = {};
   var message = '';
 
-  if (revokedConfirm === 'NO' || revokedConfirm === 'no') {
+  if (revokedConfirm === i18n.__('globalNo')) {
       clearCache(userId);
       message = 'Access for ' + revokedUser + ' has *NOT* been revoked.';
       return bot.sendMessage(userId, message, {

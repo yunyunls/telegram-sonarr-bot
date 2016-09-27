@@ -5,6 +5,7 @@
         "logUserCidCommand": "user: %s, message: queried Chat ID %s",
         "logChatClearing": "user: %s, message: sent '/clear' command",
         "logChatCleared": "user: %s, message: '/clear' command successfully executed",
+        "logRevokeUserSelected": "user: %s, message: selected revoke user %s",
         "botChatCid": "The current Chat ID: %s",
         "botChatClear": "All previously sent commands have been cleared, yey!",
         "botChatQuerySeriesConfirm": "user: %s, message: confirm the series %s",
@@ -23,6 +24,7 @@
         "botChatUsers": "*Allowed Users:*",
         "botChatRevokeNoUsers": "There aren't any allowed users.",
         "botChatRevoke": "*Allowed Users:*",
+        "botChatRevokeConfirmation": "Are you sure you want to revoke access to %s ?",
         "botChatUnrevokeNoUsers": "There aren't any revoked users.",
         "botChatUnrevoke": "*Revoked Users:*",
 	"botChatHelp_1": "Below is a list of commands you have access to:",
@@ -44,5 +46,7 @@
 	"hello": "Hello",
 	"notAuthorized": "You are not authorized to use this bot.\n`/auth [password]` to authorize.",
 	"adminOnly": "Only the admin can use this feature.",
-	"selectFromMenu": "\nPlease select from the menu below."
+	"selectFromMenu": "\nPlease select from the menu below.",
+        "globalYes": "yes",
+        "globalNo": "no"
 }

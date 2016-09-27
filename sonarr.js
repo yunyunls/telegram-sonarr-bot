@@ -175,20 +175,20 @@ bot.onText(/\/auth (.+)/, function(msg, match) {
   var message = [];
 
   if (isAuthorized(fromId)) {
-    message.push('Already authorized.');
-    message.push('Type /start to begin.');
+    message.push(i18n.__('botChatAuthAlreadyAuthorized_1'));
+    message.push(i18n.__('botChatAuthAlreadyAuthorized_2'));
     return bot.sendMessage(fromId, message.join('\n'));
   }
 
   // make sure the user is not banned
   if (isRevoked(fromId)) {
-    message.push('Your access has been revoked and cannot reauthorize.');
-    message.push('Please reach out to the bot owner for support.');
+    message.push(i18n.__('botChatAuthIsRevoked_1'));
+    message.push(i18n.__('botChatAuthIsRevoked_2'));
     return bot.sendMessage(fromId, message.join('\n'));
   }
 
   if (password !== config.bot.password) {
-    return replyWithError(fromId, new Error('Invalid password.'));
+    return replyWithError(fromId, new Error(i18n.__('errorInvalidPassowrd')));
   }
 
   acl.allowedUsers.push(msg.from);
@@ -199,11 +199,11 @@ bot.onText(/\/auth (.+)/, function(msg, match) {
   }
 
   if (config.bot.owner) {
-    bot.sendMessage(config.bot.owner, getTelegramName(msg.from) + ' has been granted access.');
+    bot.sendMessage(config.bot.owner, i18n.__('botChatAuthUserWasGranted', getTelegramName(msg.from)));
   }
 
-  message.push('You have been authorized.');
-  message.push('Type /start to begin.');
+  message.push(i18n.__('botChatAuthGranted_1'));
+  message.push(i18n.__('botChatAuthGranted_2'));
 
   return bot.sendMessage(fromId, message.join('\n'));
 });
@@ -216,7 +216,7 @@ bot.onText(/\/users/, function(msg) {
 
   verifyAdmin(fromId);
 
-  var response = ['*Allowed Users:*'];
+  var response = [i18n.__('botChatUsers')];
   _.forEach(acl.allowedUsers, function(n, key) {
     response.push('➸ ' + getTelegramName(n));
   });
@@ -239,7 +239,6 @@ bot.onText(/\/revoke/, function(msg) {
   var opts = {};
 
   if (!acl.allowedUsers.length) {
-    var message = 'There aren\'t any allowed users.';
 
     opts = {
       'disable_web_page_preview': true,
@@ -247,11 +246,11 @@ bot.onText(/\/revoke/, function(msg) {
       'selective': 2,
     };
 
-    return bot.sendMessage(fromId, message, opts);
+    return bot.sendMessage(fromId, i18n.__('botChatRevokeNoUsers'), opts);
   }
 
   var keyboardList = [], keyboardRow = [], revokeList = [];
-  var response = ['*Allowed Users:*'];
+  var response = [i18n.__('botChatRevoke')];
   _.forEach(acl.allowedUsers, function(n, key) {
     revokeList.push({
       'id': key + 1,
@@ -297,7 +296,7 @@ bot.onText(/\/unrevoke/, function(msg) {
   var opts = {};
 
   if (!acl.revokedUsers.length) {
-    var message = 'There aren\'t any revoked users.';
+    var message = i18n.__('botChatUnrevokeNoUsers');
 
     return bot.sendMessage(fromId, message, {
       'disable_web_page_preview': true,
@@ -307,7 +306,7 @@ bot.onText(/\/unrevoke/, function(msg) {
   }
 
   var keyboardList = [], keyboardRow = [], revokeList = [];
-  var response = ['*Revoked Users:*'];
+  var response = [i18n.__('botChatUnrevoke')];
   _.forEach(acl.revokedUsers, function(n, key) {
     revokeList.push({
       'id': key + 1,
@@ -350,11 +349,11 @@ bot.onText(/\/clear/, function(msg) {
 
   verifyUser(fromId);
 
-  logger.info('user: %s, message: sent \'/clear\' command', fromId);
+  logger.info(i18n.__('logChatClearing', fromId));
   clearCache(fromId);
-  logger.info('user: %s, message: \'/clear\' command successfully executed', fromId);
+  logger.info(i18n.__('logChatCleared', fromId));
 
-  return bot.sendMessage(fromId, 'All previously sent commands have been cleared, yey!', {
+  return bot.sendMessage(fromId, i18n.__('botChatClear'), {
     'reply_markup': {
       'hide_keyboard': true
     }

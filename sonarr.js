@@ -224,7 +224,7 @@ bot.onText(/\/users/, function(msg) {
   return bot.sendMessage(fromId, response.join('\n'), {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
-    'selective': 2,
+    'selective': 2
   });
 });
 
@@ -243,7 +243,7 @@ bot.onText(/\/revoke/, function(msg) {
     opts = {
       'disable_web_page_preview': true,
       'parse_mode': 'Markdown',
-      'selective': 2,
+      'selective': 2
     };
 
     return bot.sendMessage(fromId, i18n.__('botChatRevokeNoUsers'), opts);

@@ -136,25 +136,25 @@ bot.on('message', function(msg) {
 
   if (currentState === state.sonarr.MONITOR) {
     verifyUser(user.id);
-    logger.info('user: %s, message: choose the profile "%s"', user.id, message);
+    logger.info(i18n.__('botChatQueryProfileChoose', user.id, message));
     return sonarr.sendMonitorList(message);
   }
 
   if (currentState === state.sonarr.TYPE) {
     verifyUser(user.id);
-    logger.info('user: %s, message: choose the type "%s"', user.id, message);
+    logger.info(i18n.__('botChatQueryTypeChoose', user.id, message));
     return sonarr.sendTypeList(message);
   }
 
   if (currentState === state.sonarr.FOLDER) {
     verifyUser(user.id);
-    logger.info('user: %s, message: choose the folder "%s"', user.id, message);
+    logger.info(i18n.__('botChatQueryFolderChoose', user.id, message));
     return sonarr.sendFolderList(message);
   }
 
   if (currentState === state.sonarr.SEASON_FOLDER) {
     verifyUser(user.id);
-    logger.info('user: %s, message: choose the season folder "%s"', user.id, message);
+    logger.info(i18n.__('botChatQuerySeasonFolderChoose', user.id, message));
     return sonarr.sendSeasonFolderList(message);
   }
 

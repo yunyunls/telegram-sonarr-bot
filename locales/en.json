@@ -55,11 +55,11 @@
         "botChatWarningOwner_2": "Please add your User ID to the config file field labeled 'owner'.",
         "botChatWarningOwner_3": "Please restart the bot once this has been updated.",
         "botChatErrorFormat": "*Oh no!* %s",
+        "globalYes": "yes",
+        "globalNo": "no",
         "errorInvalidPassowrd": "Your password is invalid.",
 	"hello": "Hello",
 	"notAuthorized": "You are not authorized to use this bot.\n`/auth [password]` to authorize.",
 	"adminOnly": "Only the admin can use this feature.",
-	"selectFromMenu": "\nPlease select from the menu below.",
-        "globalYes": "yes",
-        "globalNo": "no"
+	"selectFromMenu": "\nPlease select from the menu below."
 }

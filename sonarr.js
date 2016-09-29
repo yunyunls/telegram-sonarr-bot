@@ -386,7 +386,7 @@ bot.onText(/\/clear/, function(msg) {
  */
 function handleRevokeUser(userId, revokedUser) {
 
-  logger.info(i18n.__('logRevokeUserSelected'),userId, revokedUser);
+  logger.info(i18n.__('logRevokeUserSelected',userId, revokedUser));
 
   var keyboardList = [];
   var response = [i18n.__('botChatRevokeConfirmation', revokedUser)];
@@ -410,7 +410,7 @@ function handleRevokeUser(userId, revokedUser) {
  */
 function handleRevokeUserConfirm(userId, revokedConfirm) {
 
-  logger.info('user: %s, message: selected revoke confirmation %s', userId, revokedConfirm);
+  logger.info(i18n.__('logRevokeConfirmationSelected',userId, revokedConfirm));
 
   var revokedUser = cache.get('revokedUserName' + userId);
   var opts = {};
@@ -418,7 +418,7 @@ function handleRevokeUserConfirm(userId, revokedConfirm) {
 
   if (revokedConfirm === i18n.__('globalNo')) {
       clearCache(userId);
-      message = 'Access for ' + revokedUser + ' has *NOT* been revoked.';
+      message = i18n.__('botChatRevokeFailed',revokedUser);
       return bot.sendMessage(userId, message, {
         'disable_web_page_preview': true,
          'parse_mode': 'Markdown',
@@ -435,7 +435,7 @@ function handleRevokeUserConfirm(userId, revokedConfirm) {
   acl.allowedUsers.splice(j, 1);
   updateACL();
 
-  message = 'Access for ' + revokedUser + ' has been revoked.';
+  message = i18n.__('botChatRevokeSucessed',revokedUser);
 
   return bot.sendMessage(userId, message, {
     'disable_web_page_preview': true,
@@ -449,16 +449,16 @@ function handleRevokeUserConfirm(userId, revokedConfirm) {
  */
 function handleUnRevokeUser(userId, revokedUser) {
 
-  var keyboardList = [];
-  var response = ['Are you sure you want to unrevoke access for ' + revokedUser + '?'];
-  keyboardList.push(['NO']);
-  keyboardList.push(['yes']);
+  logger.info(i18n.__('logUnrevokeUserSelected',userId, revokedUser));
 
+  var keyboardList = [];
+  var response = [i18n.__('botChatUnrevokeConfirmation', revokedUser)];
+  keyboardList.push([i18n.__('globalNo')]);
+  keyboardList.push([i18n.__('globalYes')]);
+  
   // set cache
   cache.set('state' + userId, state.admin.UNREVOKE_CONFIRM);
   cache.set('revokedUserName' + userId, revokedUser);
-
-  logger.info('user: %s, message: selected unrevoke user %s', userId, revokedUser);
 
   var keyboard = {
     keyboard: keyboardList,
@@ -478,14 +478,14 @@ function handleUnRevokeUser(userId, revokedUser) {
  */
 function handleUnRevokeUserConfirm(userId, revokedConfirm) {
 
-  logger.info('user: %s, message: selected unrevoke confirmation %s', userId, revokedConfirm);
+  logger.info(i18n.__('logUnrevokeConfirmationSelected',userId, revokedConfirm));
 
   var revokedUser = cache.get('revokedUserName' + userId);
   var opts = {};
   var message = '';
-  if (revokedConfirm === 'NO' || revokedConfirm === 'no') {
+  if (revokedConfirm === i18n.__('globalNo')) {
       clearCache(userId);
-      message = 'Access for ' + revokedUser + ' has *NOT* been unrevoked.';
+      message = i18n.__('botChatRevokeFailed',revokedUser);
       return bot.sendMessage(userId, message, {
         'disable_web_page_preview': true,
         'parse_mode': 'Markdown',
@@ -500,7 +500,7 @@ function handleUnRevokeUserConfirm(userId, revokedConfirm) {
   acl.revokedUsers.splice(j, 1);
   updateACL();
 
-  message = 'Access for ' + revokedUser + ' has been unrevoked.';
+  message = i18n.__('botChatRevokeSucessed',revokedUser);
 
   return bot.sendMessage(userId, message, {
     'disable_web_page_preview': true,

@@ -575,9 +575,9 @@ function isRevoked(userId) {
  */
 function promptOwnerConfig(userId) {
   if (!config.bot.owner) {
-    var message = ['Your User ID: ' + userId];
-    message.push('Please add your User ID to the config file field labeled \'owner\'.');
-    message.push('Please restart the bot once this has been updated.');
+    var message = [i18n.__('botChatWarningOwner_1', userId)];
+    message.push(i18n.__('botChatWarningOwner_2'));
+    message.push(i18n.__('botChatWarningOwner_3'));
     return bot.sendMessage(userId, message.join('\n'));
   }
 }
@@ -586,8 +586,8 @@ function promptOwnerConfig(userId) {
  * handle removing the custom keyboard
  */
 function replyWithError(userId, err) {
-  logger.warn('user: %s message: %s', userId, err.message);
-  return bot.sendMessage(userId, '*Oh no!* ' + err, {
+  logger.warn(i18n.__('logWarnError', userId, err.message));
+  return bot.sendMessage(userId, i18n.__('botChatErrorFormat', err), {
     'parse_mode': 'Markdown',
     'reply_markup': {
       'hide_keyboard': true

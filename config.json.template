@@ -6,7 +6,8 @@
     "password": "",
     "owner": 0,
     "notifyId": 0,
-    "maxResults": 15
+    "maxResults": 15,
+    "lang": "en"
   },
   "sonarr": {
     "hostname": "",

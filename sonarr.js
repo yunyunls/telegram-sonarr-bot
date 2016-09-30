@@ -20,6 +20,11 @@ var acl    = require(__dirname + '/lib/acl');           // set up the acl file
 var SonarrMessage = require(__dirname + '/modules/SonarrMessage');
 
 /*
+ * modules
+ */
+i18n.setLocale(config.bot.lang);
+
+/*
  * set up the telegram bot
  */
 var bot = new TelegramBot(config.telegram.botToken, { polling: true });

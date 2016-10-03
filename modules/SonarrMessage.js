@@ -1,3 +1,5 @@
+/* global __dirname */
+
 'use strict';
 
 var SonarrAPI = require('sonarr-api');
@@ -341,7 +343,7 @@ SonarrMessage.prototype.sendProfileList = function(displayName) {
     return self._sendMessage(new Error('Something went wrong, try searching again'));
   }
 
-  if(displayName == 'No'){
+  if(displayName === 'No'){
     return self._sendMessage(new Error('Aborted'));
   }
 

@@ -1,3 +1,5 @@
+/* global __dirname */
+
 'use strict';
 
 var fs          = require('fs');                        // https://nodejs.org/api/fs.html
@@ -306,7 +308,7 @@ bot.onText(/\/revoke/, function(msg) {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
-    'reply_markup': JSON.stringify({ keyboard: keyboardList, one_time_keyboard: true }),
+    'reply_markup': JSON.stringify({ keyboard: keyboardList, one_time_keyboard: true })
   });
 });
 
@@ -326,7 +328,7 @@ bot.onText(/\/unrevoke/, function(msg) {
     return bot.sendMessage(fromId, message, {
       'disable_web_page_preview': true,
       'parse_mode': 'Markdown',
-      'selective': 2,
+      'selective': 2
     });
   }
 

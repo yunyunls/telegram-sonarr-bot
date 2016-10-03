@@ -40,7 +40,7 @@ SonarrMessage.prototype.performLibrarySearch = function(searchText) {
   var query = searchText;
 
   self.sonarr.get('series').then(function(result) {
-    logger.info(i18n.__('logSonarrAllSeries',self.username)));
+    logger.info(i18n.__('logSonarrAllSeries',self.username));
 
     _.sortBy(result, 'title');
 

@@ -69,7 +69,7 @@ SonarrMessage.prototype.performLibrarySearch = function(searchText) {
 
     if (response.length > 50) {
       var splitReponse = _.chunk(response, 50);
-      splitReponse.sort()
+      splitReponse.sort();
       var i = 0;
       var libraryLoop = setInterval(function () {
         var n = splitReponse[i];
@@ -131,7 +131,7 @@ SonarrMessage.prototype.performWantedSearch = function() {
     })
     .then(function() {
       logger.info(i18n.__('logSonarrWantedCommandExecuted'), self.username);
-      return self._sendMessage(i18n.__('botChatSonarrWantedCommandExecuted');
+      return self._sendMessage(i18n.__('botChatSonarrWantedCommandExecuted'));
     })
     .catch(function(error) {
       return self._sendMessage(error);
@@ -224,7 +224,7 @@ SonarrMessage.prototype.sendSeriesList = function(seriesName) {
 
       var imageCover = null;
       _.forEach(n.images, function(image, index){
-        if(image.coverType == 'poster'){
+        if(image.coverType === 'poster'){
           imageCover = image.url;
         }
       });

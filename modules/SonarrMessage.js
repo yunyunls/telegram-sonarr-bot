@@ -40,7 +40,7 @@ SonarrMessage.prototype.performLibrarySearch = function(searchText) {
   var query = searchText;
 
   self.sonarr.get('series').then(function(result) {
-    logger.info('user: %s, message: all series', self.username);
+    logger.info(i18n.__('logSonarrAllSeries',self.username)));
 
     _.sortBy(result, 'title');
 
@@ -57,7 +57,7 @@ SonarrMessage.prototype.performLibrarySearch = function(searchText) {
     });
 
     if (!response.length) {
-      throw new Error('Unable to locate ' + query + ' in sonarr library');
+      throw new Error(i18n.__('errorSonarrUnableToLocate'), query);
     }
 
     response.sort();

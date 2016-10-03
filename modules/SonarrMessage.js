@@ -145,14 +145,14 @@ SonarrMessage.prototype.performWantedSearch = function() {
 SonarrMessage.prototype.performLibraryRefresh = function() {
   var self = this;
 
-  logger.info('user: %s, message: sent \'/refresh\' command', self.username);
+  logger.info(i18n.__('logSonarrRefreshCommandSent',self.username));
 
   self.sonarr.post('command', {
     'name': 'RefreshSeries'
   })
   .then(function() {
-    logger.info('user: %s, message: \'/refresh\' command successfully executed', self.username);
-    return self._sendMessage('Refresh series command sent.');
+    logger.info(i18n.__('logSonarrRefreshCommandExecuted',self.username));
+    return self._sendMessage(i18n.__('botChatSonarrRefreshCommandExecuted'));
   })
   .catch(function(error) {
     return self._sendMessage(error);
@@ -165,18 +165,18 @@ SonarrMessage.prototype.performCalendarSearch = function(futureDays) {
   var fromDate = moment().toISOString();
   var toDate = moment().add(futureDays, 'day').toISOString();
 
-  logger.info('user: %s, message: sent \'/upcoming\' command from %s to %s', self.username, fromDate, toDate);
+  logger.info(i18n.__('logSonarrUpcomingCommandSent', self.username, fromDate, toDate));
 
   self.sonarr.get('calendar', { 'start': fromDate, 'end': toDate})
   .then(function (episode) {
     if (!episode.length) {
-      throw new Error('Nothing in the calendar for the specified time.');
+      throw new Error(i18n.__('errorSonarrNothingInCalendar'));
     }
 
     var lastDate = null;
     var response = [];
     _.forEach(episode, function(n, key) {
-      var done = (n.hasFile ? ' - *Done*' : '');
+      var done = (n.hasFile ? i18n.__('SonarrDone') : '');
 
       // Add an empty line to break list of multiple days
       if(lastDate != null && n.airDate != lastDate) response.push(' ');
@@ -185,7 +185,7 @@ SonarrMessage.prototype.performCalendarSearch = function(futureDays) {
       lastDate = n.airDate;
     });
 
-    logger.info('#1 user: %s, message: found the following series %s', self.username, response.join(','));
+    logger.info(i18n.__("logSonarrFoundSeries", self.username, response.join(',')));
 
     return self._sendMessage(response.join('\n'), []);
   })
@@ -203,16 +203,16 @@ SonarrMessage.prototype.sendSeriesList = function(seriesName) {
 
   self.test = 'hello';
 
-  logger.info('user: %s, message: sent \'/query\' command', self.username);
+  logger.info(i18n.__('logSonarrQueryCommandSent',self.username));
 
   self.sonarr.get('series/lookup', { 'term': seriesName }).then(function(result) {
     if (!result.length) {
-      throw new Error('could not find ' + seriesName + ', try searching again');
+      throw new Error(i18n.__('errorSonarrSerieNotFound'), seriesName);
     }
 
     var series = result;
 
-    logger.info('user: %s, message: requested to search for series "%s"', self.username, seriesName);
+    logger.info(i18n.__('logSonarrUserSerieRequested', self.username, seriesName));
 
     var seriesList = [], keyboardList = [];
 

@@ -383,7 +383,7 @@ SonarrMessage.prototype.sendProfileList = function(displayName) {
 
       response.push(i18n.__('selectFromMenu'));
 
-      logger.info('#3 user: %s, message: found the following profiles %s', self.username, keyboardList.join(','));
+      logger.info(i18n.__('logSonarrFoundProfile', self.username, keyboardList.join(',')));
 
       // set cache
       self.cache.set('state' + self.user.id, state.sonarr.MONITOR);
@@ -407,19 +407,19 @@ SonarrMessage.prototype.sendMonitorList = function(profileName) {
 
   var profileList = self.cache.get('seriesProfileList' + self.user.id);
   if (!profileList) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   var profile = _.filter(profileList, function(item) { return item.name === profileName; })[0];
   if (!profile) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
-  logger.info('user: %s, message: requested to get monitor list', self.username);
+  logger.info(i18n.__('logSonarrMonitorListRequest', self.username));
 
   var monitor = ['future', 'all', 'none', 'latest', 'first'];
   var monitorList = [], keyboardList = [], keyboardRow = [];
-  var response = ['*Select which seasons to monitor*'];
+  var response = [i18n.__('botChatSonarrSelectSeason')];
   _.forEach(monitor, function(n, key) {
     monitorList.push({ 'type': n });
 
@@ -438,7 +438,7 @@ SonarrMessage.prototype.sendMonitorList = function(profileName) {
 
   response.push(i18n.__('selectFromMenu'));
 
-  logger.info('user: %s, message: found the following monitor types %s', self.username, keyboardList.join(','));
+  logger.info(i18n.__('logSonarrFoundMonitorType', self.username, keyboardList.join(',')));
 
   self.cache.set('seriesProfileId' + self.user.id, profile.profileId);
   self.cache.set('seriesMonitorList' + self.user.id, monitorList);
@@ -452,12 +452,12 @@ SonarrMessage.prototype.sendTypeList = function(monitorName) {
 
   var monitorList = self.cache.get('seriesMonitorList' + self.user.id);
   if (!monitorList) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   var monitor = _.filter(monitorList, function(item) { return item.type === monitorName; })[0];
   if (!monitor) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   logger.info('user: %s, message: requested to get series types list', self.username);
@@ -497,12 +497,12 @@ SonarrMessage.prototype.sendFolderList = function(typeName) {
 
   var typeList = self.cache.get('seriesTypeList' + self.user.id);
   if (!typeList) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   var type = _.filter(typeList, function(item) { return item.type === typeName; })[0];
   if (!type) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   self.sonarr.get('rootfolder').then(function(result) {
@@ -544,12 +544,12 @@ SonarrMessage.prototype.sendSeasonFolderList = function(folderName) {
 
   var folderList = self.cache.get('seriesFolderList' + self.user.id);
   if (!folderList) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   var folder = _.filter(folderList, function(item) { return item.path === folderName; })[0];
   if (!folder) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   logger.info('user: %s, message: requested to get season folders list', self.username);
@@ -601,7 +601,7 @@ SonarrMessage.prototype.sendAddSeries = function(seasonFolderName) {
   var seasonFolderList = self.cache.get('seriesSeasonFolderList' + self.user.id);
 
   if (!seasonFolderList) {
-    self._sendMessage(new Error('Something went wrong, try searching again'));
+    self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   var series       = _.filter(seriesList, function(item) { return item.id === seriesId; })[0];
@@ -665,7 +665,7 @@ SonarrMessage.prototype.sendAddSeries = function(seasonFolderName) {
       });
       break;
     default:
-      self._sendMessage(new Error('Something went wrong, try searching again'));
+      self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   // update seasons to be monitored

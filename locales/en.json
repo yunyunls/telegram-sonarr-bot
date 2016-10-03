@@ -1,6 +1,6 @@
 {
-	"logUserStartCommand": "user: %s, message: sent '/starts' command",
-	"logBotInitialisation": "sonarr bot %s initialized",
+	"logUserStartCommand": "user: %s, message: sent '/starts' command.",
+	"logBotInitialisation": "sonarr bot %s initialized.",
 	"logUserHelpCommand": "user: %s, message: sent '/help' command",
         "logUserCidCommand": "user: %s, message: queried Chat ID %s",
         "logChatClearing": "user: %s, message: sent '/clear' command",

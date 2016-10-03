@@ -64,7 +64,7 @@ SonarrMessage.prototype.performLibrarySearch = function(searchText) {
 
     if (query) {
       // add title to begining of the array
-      response.unshift('*Found matching results in Sonarr library:*');
+      response.unshift(i18n.__('botChatSonnarMatchingResults'));
     }
 
     if (response.length > 50) {
@@ -94,12 +94,12 @@ SonarrMessage.prototype.performLibrarySearch = function(searchText) {
 SonarrMessage.prototype.performRssSync = function() {
   var self = this;
 
-  logger.info('user: %s, message: sent \'/rss\' command', self.username);
+  logger.info(i18n.__('logSonarrRSSCommandSent'));
 
   self.sonarr.post('command', { 'name': 'RssSync' })
   .then(function() {
-    logger.info('user: %s, message: \'/rss\' command successfully executed', self.username);
-    return self._sendMessage('RSS Sync command sent');
+    logger.info('logSonarrRSSCommandExecuted', self.username);
+    return self._sendMessage(i18n.__('botChatSonnarRSSCommandExecuted'));
   })
   .catch(function(error) {
     return self._sendMessage(error);
@@ -109,7 +109,7 @@ SonarrMessage.prototype.performRssSync = function() {
 SonarrMessage.prototype.performWantedSearch = function() {
   var self = this;
 
-  logger.info('user: %s, message: sent \'/wanted\' command', self.username);
+  logger.info(i18n.__('logSonarrWantedCommandSent', self.username));
 
   self.sonarr.get('/wanted/missing', {
     'page': 1,
@@ -130,8 +130,8 @@ SonarrMessage.prototype.performWantedSearch = function() {
       'episodeIds': episodes
     })
     .then(function() {
-      logger.info('user: %s, message: \'/wanted\' command successfully executed', self.username);
-      return self._sendMessage('Wanted command sent.');
+      logger.info(i18n.__('logSonarrWantedCommandExecuted'), self.username);
+      return self._sendMessage(i18n.__('botChatSonarrWantedCommandExecuted');
     })
     .catch(function(error) {
       return self._sendMessage(error);

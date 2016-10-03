@@ -220,7 +220,7 @@ SonarrMessage.prototype.sendSeriesList = function(seriesName) {
 
     series.length = (series.length > config.bot.maxResults ? config.bot.maxResults : series.length);
 
-    var response = ['*Found ' + series.length + ' series *'];
+    var response = [i18n.__('botChatSonarrFoundNSeries', series.length)];
 
     _.forEach(series, function(n, key) {
 

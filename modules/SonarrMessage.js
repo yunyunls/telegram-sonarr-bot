@@ -1,3 +1,5 @@
+/* global __dirname */
+
 'use strict';
 
 var SonarrAPI = require('sonarr-api');

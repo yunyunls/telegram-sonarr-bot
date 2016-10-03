@@ -1,7 +1,7 @@
-/* global __dirname */
+/* global __dirname, process */
 
 'use strict';
-var fs = require("fs")
+var fs = require("fs");
 var i18n   = require(__dirname + '/lib/lang');    
 var logger = require(__dirname + '/lib/logger');
 var config = require(__dirname + '/lib/config');
@@ -43,7 +43,7 @@ message.push(i18n.__("botNotifyEpisodeImported"));
 message.push(i18n.__("botNotifyEpisodeFormat", series_title, season, episode));
 message.push(i18n.__("botNotifyAirDate", airdate));
 message.push(i18n.__("botNotifyQuality", quality));
-message.push(i18n.__("botNotifyQuality", fileSizeInMegaBytes));
+message.push(i18n.__("botNotifySize", fileSizeInMegaBytes));
 
 //message.push(i18n.__("botNotifySeriesID", series_id));
 //message.push(i18n.__("botNotifyPath", series_path));
@@ -61,5 +61,5 @@ message.push(i18n.__("botNotifyQuality", fileSizeInMegaBytes));
 bot.sendMessage(groupId, message.join('\n'), {
   'disable_web_page_preview': true,
   'parse_mode': 'Markdown',
-  'selective': 2,
+  'selective': 2
 });

@@ -251,7 +251,7 @@ SonarrMessage.prototype.sendSeriesList = function(seriesName) {
 
     response.push(i18n.__('selectFromMenu'));
 
-    logger.info('#2 user: %s, message: found the following series %s', self.username, keyboardList.join(','));
+    logger.info(i18n.__("logSonarrFoundSeries2", self.username, keyboardList.join(',')));
 
     // set cache
     self.cache.set('seriesList' + self.user.id, seriesList);
@@ -270,12 +270,12 @@ SonarrMessage.prototype.confirmShowSelect = function(displayName) {
   var seriesList = self.cache.get('seriesList' + self.user.id);
 
   if (!seriesList) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   var series = _.filter(seriesList, function(item) { return item.keyboardValue === displayName; })[0];
   if (!series) {
-    return self._sendMessage(new Error('Could not find the series with title "' + displayName + '"'));
+    return self._sendMessage(new Error(i18n.__('botChatSonarrSerieNotFound', displayName)));
   }
 
   // use workflow to run async tasks
@@ -284,11 +284,11 @@ SonarrMessage.prototype.confirmShowSelect = function(displayName) {
   // check for existing series on sonarr
   workflow.on('checkSonarrSeries', function () {
     self.sonarr.get('series').then(function(result) {
-      logger.info('user: %s, message: looking for existing series', self.username);
+      logger.info(i18n.__('logSonarrLookingForExistingSeries', self.username));
 
       var existingSeries = _.filter(result, function(item) { return item.tvdbId === series.tvdbId; })[0];
       if (existingSeries) {
-        throw new Error('Series already exists and is already being tracked by Sonarr');
+        throw new Error(i18n.__('errorSonarrSerieAlreadyTracked'));
       }
       workflow.emit('confirmShow');
     }).catch(function(error) {
@@ -299,16 +299,16 @@ SonarrMessage.prototype.confirmShowSelect = function(displayName) {
   // check for existing series on sonarr
   workflow.on('confirmShow', function () {
     self.sonarr.get('series').then(function(result) {
-      logger.info('user: %s, message: conform correct show: ' + series.keyboardValue, self.username);
+      logger.info(i18n.__('logSonarrConfirmCorrectShow', series.keyboardValue, self.username));
 
-      var keyboardList = [['Yes'], ['No']];
+      var keyboardList = [[i18n.__('globalYes')], [i18n.__('globalNo')]];
 
       var response = ['*' + series.title + ' (' + series.year + ')*\n'];
 
       response.push(series.plot + '\n');
-      response.push('*Is this show correct?*');
-      response.push('➸ Yes');
-      response.push('➸ No');
+      response.push(i18n.__('botChatSonarrIsShowCorrect'));
+      response.push(i18n.__('globalArrowYes'));
+      response.push(i18n.__('globalArrowNo'));
 
       // Add cover to message (if available)
       if(series.coverUrl !== null){
@@ -338,11 +338,11 @@ SonarrMessage.prototype.sendProfileList = function(displayName) {
   var seriesId = self.cache.get('seriesId' + self.user.id);
 
   if (!seriesId) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   if(displayName == 'No'){
-    return self._sendMessage(new Error('Aborted'));
+    return self._sendMessage(new Error(i18n.__('globalAborted')));
   }
 
   // use workflow to run async tasks
@@ -352,12 +352,12 @@ SonarrMessage.prototype.sendProfileList = function(displayName) {
   workflow.on('getSonarrProfiles', function () {
     self.sonarr.get('profile').then(function(result) {
       if (!result.length) {
-        throw new Error('Could not get profiles, try searching again');
+        throw new Error(i18n.__('errorSonarrCouldntGetProfile'));
       }
 
       var profiles = result;
 
-      logger.info('user: %s, message: requested to get profile list', self.username);
+      logger.info(i18n.__('logSonarrProfileListRequested', self.username));
 
       var profileList = [], keyboardList = [], keyboardRow = [];
       var response = ['*Found ' + profiles.length + ' profiles*'];

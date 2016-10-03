@@ -8,10 +8,10 @@ var TelegramBot = require('node-telegram-bot-api');     // https://www.npmjs.com
 /*
  * libs
  */
-var state  = require(__dirname + '/lib/state');         // handles command structure
-var logger = require(__dirname + '/lib/logger');        // logs to file and console
 var i18n   = require(__dirname + '/lib/lang');          // set up multilingual support
 var config = require(__dirname + '/lib/config');        // the concised configuration
+var state  = require(__dirname + '/lib/state');         // handles command structure
+var logger = require(__dirname + '/lib/logger');        // logs to file and console
 var acl    = require(__dirname + '/lib/acl');           // set up the acl file
 
 /*
@@ -342,7 +342,7 @@ bot.onText(/\/unrevoke/, function(msg) {
     response.push('➸ ' + getTelegramName(n));
 
     keyboardRow.push(getTelegramName(n));
-    if (keyboardRow.length == 2) {
+    if (keyboardRow.length === 2) {
       keyboardList.push(keyboardRow);
       keyboardRow = [];
     }
@@ -406,7 +406,7 @@ function handleRevokeUser(userId, revokedUser) {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
-    'reply_markup': JSON.stringify({ keyboard: keyboardList, one_time_keyboard: true }),
+    'reply_markup': JSON.stringify({ keyboard: keyboardList, one_time_keyboard: true })
   });
 }
 
@@ -427,7 +427,7 @@ function handleRevokeUserConfirm(userId, revokedConfirm) {
       return bot.sendMessage(userId, message, {
         'disable_web_page_preview': true,
          'parse_mode': 'Markdown',
-        'selective': 2,
+        'selective': 2
       });
   }
 
@@ -494,7 +494,7 @@ function handleUnRevokeUserConfirm(userId, revokedConfirm) {
       return bot.sendMessage(userId, message, {
         'disable_web_page_preview': true,
         'parse_mode': 'Markdown',
-        'selective': 2,
+        'selective': 2
       });
   }
 
@@ -510,7 +510,7 @@ function handleUnRevokeUserConfirm(userId, revokedConfirm) {
   return bot.sendMessage(userId, message, {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
-    'selective': 2,
+    'selective': 2
   });
 }
 
@@ -523,7 +523,7 @@ function updateACL() {
       throw new Error(err);
     }
 
-    logger.info('the access control list was updated');
+    logger.info(i18n.__('logAclUpdated'));
   });
 }
 
@@ -633,7 +633,7 @@ function getTelegramName(user) {
     lastname = (aclUser.last_name !== undefined) ? ' ' + aclUser.last_name : '';
     return aclUser.username || (aclUser.first_name + lastname);
   }
-  return 'unknown user';
+  return i18n.__('globalUnknowUser');
 }
 
 /*

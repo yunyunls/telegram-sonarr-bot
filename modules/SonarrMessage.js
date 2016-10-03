@@ -57,7 +57,7 @@ SonarrMessage.prototype.performLibrarySearch = function(searchText) {
     });
 
     if (!response.length) {
-      throw new Error(i18n.__('errorSonarrUnableToLocate'), query);
+      throw new Error(i18n.__('errorSonarrUnableToLocate', query));
     }
 
     response.sort();
@@ -130,7 +130,7 @@ SonarrMessage.prototype.performWantedSearch = function() {
       'episodeIds': episodes
     })
     .then(function() {
-      logger.info(i18n.__('logSonarrWantedCommandExecuted'), self.username);
+      logger.info(i18n.__('logSonarrWantedCommandExecuted', self.username));
       return self._sendMessage(i18n.__('botChatSonarrWantedCommandExecuted'));
     })
     .catch(function(error) {
@@ -145,13 +145,13 @@ SonarrMessage.prototype.performWantedSearch = function() {
 SonarrMessage.prototype.performLibraryRefresh = function() {
   var self = this;
 
-  logger.info(i18n.__('logSonarrRefreshCommandSent',self.username));
+  logger.info(i18n.__('logSonarrRefreshCommandSent', self.username));
 
   self.sonarr.post('command', {
     'name': 'RefreshSeries'
   })
   .then(function() {
-    logger.info(i18n.__('logSonarrRefreshCommandExecuted',self.username));
+    logger.info(i18n.__('logSonarrRefreshCommandExecuted', self.username));
     return self._sendMessage(i18n.__('botChatSonarrRefreshCommandExecuted'));
   })
   .catch(function(error) {
@@ -203,11 +203,11 @@ SonarrMessage.prototype.sendSeriesList = function(seriesName) {
 
   self.test = 'hello';
 
-  logger.info(i18n.__('logSonarrQueryCommandSent',self.username));
+  logger.info(i18n.__('logSonarrQueryCommandSent', self.username));
 
   self.sonarr.get('series/lookup', { 'term': seriesName }).then(function(result) {
     if (!result.length) {
-      throw new Error(i18n.__('errorSonarrSerieNotFound'), seriesName);
+      throw new Error(i18n.__('errorSonarrSerieNotFound', seriesName));
     }
 
     var series = result;

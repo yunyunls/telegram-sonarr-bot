@@ -616,7 +616,7 @@ SonarrMessage.prototype.sendAddSeries = function(seasonFolderName) {
   postOpts.title            = series.title;
   postOpts.titleSlug        = series.titleSlug;
   postOpts.rootFolderPath   = folder.path;
-  postOpts.seasonFolder     = (seasonFolder.type === 'yes' ? true : false);
+  postOpts.seasonFolder     = (seasonFolder.type === i18n.__("globalYes") ? true : false);
   postOpts.monitored        = true;
   postOpts.seriesType       = (type.type === 'airs daily' ? 'daily' : type.type);
   postOpts.qualityProfileId = profile.profileId;
@@ -671,17 +671,17 @@ SonarrMessage.prototype.sendAddSeries = function(seasonFolderName) {
   // update seasons to be monitored
   postOpts.seasons = series.seasons;
 
-  logger.info('user: %s, message: adding series "%s" with options %s', self.username, series.title, JSON.stringify(postOpts));
+  logger.info(i18n.__("logSonarrSerieAddedWithOptions", self.username, series.title, JSON.stringify(postOpts)));
 
   self.sonarr.post('series', postOpts).then(function(result) {
     if (!result) {
-      throw new Error('Could not add series, try searching again.');
+      throw new Error(i18n.__("logSonarrSerieCantAdd"));
     }
 
-    logger.info('user: %s, message: added series "%s"', self.username, series.title);
+    logger.info(i18n.__("logSonarrSerieAdded", self.username, series.title));
 
     if (self._isBotAdmin() && self.adminId !== self.user.id) {
-      self.bot.sendMessage(self.user.id, 'Series "' + series.title + '" added by ' + self.username, {
+      self.bot.sendMessage(self.user.id, i18n.__("botChatSonarrSerieAddedBy", series.title, self.username), {
         'selective': 2,
         'parse_mode': 'Markdown',
         'reply_markup': {
@@ -690,7 +690,7 @@ SonarrMessage.prototype.sendAddSeries = function(seasonFolderName) {
       });
     }
 
-    return self.bot.sendMessage(self.user.id, 'Series "' + series.title + '" added', {
+    return self.bot.sendMessage(self.user.id, i18n.__("botChatSonarrSerieAdded", series.title), {
       'selective': 2,
       'parse_mode': 'Markdown',
       'reply_markup': {
@@ -716,7 +716,7 @@ SonarrMessage.prototype._sendMessage = function(message, keyboard) {
 
   var options;
   if (message instanceof Error) {
-    logger.warn('user: %s message: %s', self.username, message.message);
+    logger.warn(i18n.__("logMessageClear", self.username, message.message));
 
     message = message.message;
     options = {
@@ -747,7 +747,7 @@ SonarrMessage.prototype._isBotAdmin = function() {
 SonarrMessage.prototype._clearCache = function() {
   var self = this;
 
-  logger.info('user: %s, message: %s', self.username, 'clearing series cache');
+  logger.info(i18n.__("logClearCache", self.username));
 
   var cacheItems = [
     'seriesId', 'seriesList', 'seriesProfileId',

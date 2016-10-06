@@ -618,6 +618,7 @@ SonarrMessage.prototype.sendAddSeries = function(seasonFolderName) {
   postOpts.monitored        = true;
   postOpts.seriesType       = (type.type === 'airs daily' ? 'daily' : type.type);
   postOpts.qualityProfileId = profile.profileId;
+  postOpts.images           = [];
 
   var lastSeason  = _.max(series.seasons, 'seasonNumber');
   var firstSeason = _.min(_.reject(series.seasons, { seasonNumber: 0 }), 'seasonNumber');

@@ -123,25 +123,25 @@ bot.on('message', function(msg) {
   var currentState = cache.get('state' + user.id);
 
   if (currentState === state.admin.REVOKE) {
-      verifyUser(user.id);
-      return handleRevokeUser(user.id, message);
+    verifyUser(user.id);
+    return handleRevokeUser(user.id, message);
   }
-  
+
   if (currentState === state.admin.REVOKE_CONFIRM) {
-      verifyUser(user.id);
-      return handleRevokeUserConfirm(user.id, message);
+    verifyUser(user.id);
+    return handleRevokeUserConfirm(user.id, message);
   }
-  
+
   if (currentState === state.admin.UNREVOKE) {
-      verifyUser(user.id);
-      return handleUnRevokeUser(user.id, message);
+    verifyUser(user.id);
+    return handleUnRevokeUser(user.id, message);
   }
-  
+
   if (currentState === state.admin.UNREVOKE_CONFIRM) {
-      verifyUser(user.id);
-      return handleUnRevokeUserConfirm(user.id, message);
+    verifyUser(user.id);
+    return handleUnRevokeUserConfirm(user.id, message);
   }
-  
+
   if (currentState === state.sonarr.CONFIRM) {
     verifyUser(user.id);
     logger.info('user: %s, message: confirm the series %s', user.id, message);

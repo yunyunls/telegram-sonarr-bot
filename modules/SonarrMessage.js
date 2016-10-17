@@ -460,11 +460,11 @@ SonarrMessage.prototype.sendTypeList = function(monitorName) {
     return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
-  logger.info('user: %s, message: requested to get series types list', self.username);
+  logger.info(i18n.__('logSonarrUserSeriesTypeRequested', self.username));
 
   var type = ['standard', 'airs daily', 'anime'];
   var typeList = [], keyboardList = [], keyboardRow = [];
-  var response = ['*Select which type of series*'];
+  var response = [i18n.__('selectSeriesType')];
   _.forEach(type, function(n, key) {
     typeList.push({ 'type': n });
 
@@ -483,7 +483,7 @@ SonarrMessage.prototype.sendTypeList = function(monitorName) {
 
   response.push(i18n.__('selectFromMenu'));
 
-  logger.info('user: %s, message: found the following series types %s', self.username, keyboardList.join(','));
+  logger.info(i18n.__('logSonarrFoundSeriesType', self.username, keyboardList.join(',')));
 
   self.cache.set('seriesMonitorId' + self.user.id, monitor.type);
   self.cache.set('seriesTypeList' + self.user.id, typeList);
@@ -507,12 +507,12 @@ SonarrMessage.prototype.sendFolderList = function(typeName) {
 
   self.sonarr.get('rootfolder').then(function(result) {
     if (!result.length) {
-      throw new Error('Could not get folders, try searching again');
+      throw new Error(i18n.__("errorSonarrCouldntFindFolders"));
     }
 
     var folders = result;
 
-    logger.info('user: %s, message: requested to get folder list', self.username);
+    logger.info(i18n.__('logSonarrFolderListRequested', self.username));
 
     var folderList = [], keyboardList = [];
     var response = ['*Found ' + folders.length + ' folders*'];
@@ -525,7 +525,7 @@ SonarrMessage.prototype.sendFolderList = function(typeName) {
     });
     response.push(i18n.__('selectFromMenu'));
 
-    logger.info('user: %s, message: found the following folders %s', self.username, keyboardList.join(','));
+    logger.info(i18n.__('logSonarrFoundFolders', self.username, keyboardList.join(',')));
 
     // set cache
     self.cache.set('seriesTypeId' + self.user.id, type.type);
@@ -552,11 +552,11 @@ SonarrMessage.prototype.sendSeasonFolderList = function(folderName) {
     return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
-  logger.info('user: %s, message: requested to get season folders list', self.username);
+  logger.info(i18n.__('logSonarrSeasonFoldersListRequested', self.username));
 
-  var seasonFolder = ['yes', 'no'];
+  var seasonFolder = [i18n.__('globalYes'), i18n.__('globalNo')];
   var seasonFolderList = [], keyboardList = [], keyboardRow = [];
-  var response = ['*Would you like to use season folders?*'];
+  var response = [i18n.__('askUsingSeasonFolders')];
   _.forEach(seasonFolder, function(n, key) {
     seasonFolderList.push({ 'type': n });
 
@@ -575,7 +575,7 @@ SonarrMessage.prototype.sendSeasonFolderList = function(folderName) {
 
   response.push(i18n.__('selectFromMenu'));
 
-  logger.info('user: %s, message: found the following seasons folder types %s', self.username, keyboardList.join(','));
+    logger.info(i18n.__('logSonarrFoundSeasonsFolderTypes', self.username, keyboardList.join(',')));
 
   self.cache.set('seriesFolderId' + self.user.id, folder.folderId);
   self.cache.set('seriesSeasonFolderList' + self.user.id, seasonFolderList);

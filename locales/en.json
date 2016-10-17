@@ -56,7 +56,7 @@
         "botChatRevoke": "*Allowed Users:*",
         "botChatRevokeNoUsers": "There aren't any allowed users.",
         "botChatRevokeConfirmation": "Are you sure you want to revoke access to %s ?",
-        "botChatRevokeSuccessed": "Access for %s has been revoked",
+        "botChatRevokeSuccess": "Access for %s has been revoked",
         "botChatRevokeFailed": "Access for %s has *NOT* been revoked.",
         "botChatSonnarRSSCommandExecuted": "RSS Sync command sent",
         "botChatSonnarMatchingResults": "*Found matching results in Sonarr library:*",

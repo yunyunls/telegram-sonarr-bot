@@ -442,7 +442,7 @@ function handleRevokeUserConfirm(userId, revokedConfirm) {
   acl.allowedUsers.splice(j, 1);
   updateACL();
 
-  message = i18n.__('botChatRevokeSucessed',revokedUser);
+  message = i18n.__('botChatRevokeSuccess',revokedUser);
 
   return bot.sendMessage(userId, message, {
     'disable_web_page_preview': true,
@@ -507,7 +507,7 @@ function handleUnRevokeUserConfirm(userId, revokedConfirm) {
   acl.revokedUsers.splice(j, 1);
   updateACL();
 
-  message = i18n.__('botChatRevokeSucessed',revokedUser);
+  message = i18n.__('botChatRevokeSuccess',revokedUser);
 
   return bot.sendMessage(userId, message, {
     'disable_web_page_preview': true,

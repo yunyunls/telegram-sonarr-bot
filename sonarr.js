@@ -56,7 +56,7 @@ bot.onText(/\/start/, function(msg) {
  */
 bot.onText(/\/help/, function(msg) {
   var fromId = msg.from.id;
-
+  
   verifyUser(fromId);
 
   logger.info('user: %s, message: sent \'/help\' command', fromId);
@@ -69,33 +69,46 @@ bot.onText(/\/help/, function(msg) {
 bot.on('message', function(msg) {
   var user    = msg.from;
   var message = msg.text;
-
+ 
   var sonarr = new SonarrMessage(bot, user, cache);
 
   if (/^\/library\s?(.+)?$/g.test(message)) {
-    var searchText = /^\/library\s?(.+)?/g.exec(message)[1] || null;
-    return sonarr.performLibrarySearch(searchText);
+    if(isAuthorized(user.id)){
+       var searchText = /^\/library\s?(.+)?/g.exec(message)[1] || null;
+       return sonarr.performLibrarySearch(searchText);
+    } else {
+       return replyWithError(user.id, new Error(i18n.__('notAuthorized')));
+    }
   }
 
   if(/^\/rss$/g.test(message)) {
     verifyAdmin(user.id);
-    return sonarr.performRssSync();
+    if(isAdmin(user.id)){
+      return sonarr.performRssSync();
+    }  
   }
 
   if(/^\/wanted$/g.test(message)) {
     verifyAdmin(user.id);
-    return sonarr.performWantedSearch();
+    if(isAdmin(user.id)){
+      return sonarr.performWantedSearch();
+    }
   }
 
   if(/^\/refresh$/g.test(message)) {
     verifyAdmin(user.id);
-    return sonarr.performLibraryRefresh();
+    if(isAdmin(user.id)){
+      return sonarr.performLibraryRefresh();
+    }
   }
 
   if (/^\/upcoming\s?(\d+)?$/g.test(message)) {
-    verifyUser(user.id);
-    var futureDays = /^\/upcoming\s?(\d+)?/g.exec(message)[1] || 3;
-    return sonarr.performCalendarSearch(futureDays);
+    if(isAuthorized(user.id)){
+      var futureDays = /^\/upcoming\s?(\d+)?/g.exec(message)[1] || 3;
+      return sonarr.performCalendarSearch(futureDays);
+    } else {
+       return replyWithError(user.id, new Error(i18n.__('notAuthorized')));
+    }
   }
 
   /*
@@ -105,8 +118,10 @@ bot.on('message', function(msg) {
    */
   if (/^\/cid$/g.test(message)) {
     verifyAdmin(user.id);
-    logger.info('user: %s, message: queried Chat ID %s', user.id, msg.chat.id);
-    return bot.sendMessage(msg.chat.id, 'The current Chat ID: ' + msg.chat.id);
+    if(isAdmin(user.id)){
+      logger.info('user: %s, message: queried Chat ID %s', user.id, msg.chat.id);
+      return bot.sendMessage(msg.chat.id, 'The current Chat ID: ' + msg.chat.id);
+    }
   }
 
 
@@ -114,9 +129,12 @@ bot.on('message', function(msg) {
    * /query command
    */
   if (/^\/[Qq](uery)? (.+)$/g.test(message)) {
-    verifyUser(user.id);
-    var seriesName = /^\/[Qq](uery)? (.+)/g.exec(message)[2] || null;
-    return sonarr.sendSeriesList(seriesName);
+    if(isAuthorized(user.id)){
+       var seriesName = /^\/[Qq](uery)? (.+)/g.exec(message)[2] || null;
+       return sonarr.sendSeriesList(seriesName);
+    } else {
+       return replyWithError(user.id, new Error(i18n.__('notAuthorized')));     
+    }
   }
 
   // get the current cache state
@@ -233,19 +251,23 @@ bot.onText(/\/auth (.+)/, function(msg, match) {
  */
 bot.onText(/\/users/, function(msg) {
   var fromId = msg.from.id;
-
+  
   verifyAdmin(fromId);
+  if(isAdmin(fromId)){
 
-  var response = ['*Allowed Users:*'];
-  _.forEach(acl.allowedUsers, function(n, key) {
-    response.push('➸ ' + getTelegramName(n));
-  });
+    var response = ['*Allowed Users:*'];
+    _.forEach(acl.allowedUsers, function(n, key) {
+      response.push('➸ ' + getTelegramName(n));
+    });
 
-  return bot.sendMessage(fromId, response.join('\n'), {
-    'disable_web_page_preview': true,
-    'parse_mode': 'Markdown',
-    'selective': 2,
-  });
+    return bot.sendMessage(fromId, response.join('\n'));
+    //return bot.sendMessage(fromId, response.join('\n'), {
+    //  'disable_web_page_preview': true,
+    //  'parse_mode': 'Markdown',
+    //  'selective': 2,
+    //});
+  } 
+
 });
 
 /*
@@ -255,55 +277,58 @@ bot.onText(/\/revoke/, function(msg) {
   var fromId = msg.from.id;
 
   verifyAdmin(fromId);
+  if(isAdmin(fromId)){
+    var opts = {};
 
-  var opts = {};
+    if (!acl.allowedUsers.length) {
+      var message = 'There aren\'t any allowed users.';
 
-  if (!acl.allowedUsers.length) {
-    var message = 'There aren\'t any allowed users.';
+      opts = {
+        'disable_web_page_preview': true,
+        'parse_mode': 'Markdown',
+        'selective': 2,
+      };
 
-    opts = {
+      return bot.sendMessage(fromId, message, opts);
+    }
+
+    var keyboardList = [], keyboardRow = [], revokeList = [];
+    var response = ['*Allowed Users:*'];
+    _.forEach(acl.allowedUsers, function(n, key) {
+      revokeList.push({
+        'id': key + 1,
+        'userId': n.id,
+        'keyboardValue': getTelegramName(n)
+      });
+      response.push('➸ ' + getTelegramName(n));
+
+      keyboardRow.push(getTelegramName(n));
+      if (keyboardRow.length === 2) {
+        keyboardList.push(keyboardRow);
+        keyboardRow = [];
+      }
+    });
+
+    response.push(i18n.__('selectFromMenu'));
+
+
+    if (keyboardRow.length === 1) {
+      keyboardList.push([keyboardRow[0]]);
+    }
+
+    // set cache
+    cache.set('state' + fromId, state.admin.REVOKE);
+    cache.set('revokeUserList' + fromId, revokeList);
+    
+    var message = response.join('\n');
+    
+    return bot.sendMessage(fromId, message, {
       'disable_web_page_preview': true,
       'parse_mode': 'Markdown',
       'selective': 2,
-    };
-
-    return bot.sendMessage(fromId, message, opts);
-  }
-
-  var keyboardList = [], keyboardRow = [], revokeList = [];
-  var response = ['*Allowed Users:*'];
-  _.forEach(acl.allowedUsers, function(n, key) {
-    revokeList.push({
-      'id': key + 1,
-      'userId': n.id,
-      'keyboardValue': getTelegramName(n)
+      'reply_markup': JSON.stringify({ keyboard: keyboardList, one_time_keyboard: true }),
     });
-    response.push('➸ ' + getTelegramName(n));
-
-    keyboardRow.push(getTelegramName(n));
-    if (keyboardRow.length === 2) {
-      keyboardList.push(keyboardRow);
-      keyboardRow = [];
-    }
-  });
-
-  response.push(i18n.__('selectFromMenu'));
-
-
-  if (keyboardRow.length === 1) {
-    keyboardList.push([keyboardRow[0]]);
   }
-
-  // set cache
-  cache.set('state' + fromId, state.admin.REVOKE);
-  cache.set('revokeUserList' + fromId, revokeList);
-
-  return bot.sendMessage(fromId, response.join('\n'), {
-    'disable_web_page_preview': true,
-    'parse_mode': 'Markdown',
-    'selective': 2,
-    'reply_markup': JSON.stringify({ keyboard: keyboardList, one_time_keyboard: true }),
-  });
 });
 
 /*
@@ -313,53 +338,54 @@ bot.onText(/\/unrevoke/, function(msg) {
   var fromId = msg.from.id;
 
   verifyAdmin(fromId);
+  if(isAdmin(fromId)){
+    var opts = {};
 
-  var opts = {};
+    if (!acl.revokedUsers.length) {
+      var message = 'There aren\'t any revoked users.';
 
-  if (!acl.revokedUsers.length) {
-    var message = 'There aren\'t any revoked users.';
+      return bot.sendMessage(fromId, message, {
+        'disable_web_page_preview': true,
+        'parse_mode': 'Markdown',
+        'selective': 2,
+      });
+    }
 
-    return bot.sendMessage(fromId, message, {
+    var keyboardList = [], keyboardRow = [], revokeList = [];
+    var response = ['*Revoked Users:*'];
+    _.forEach(acl.revokedUsers, function(n, key) {
+      revokeList.push({
+        'id': key + 1,
+        'userId': n.id,
+        'keyboardValue': getTelegramName(n)
+      });
+
+      response.push('➸ ' + getTelegramName(n));
+
+      keyboardRow.push(getTelegramName(n));
+      if (keyboardRow.length == 2) {
+        keyboardList.push(keyboardRow);
+        keyboardRow = [];
+      }
+    });
+
+    response.push(i18n.__('selectFromMenu'));
+
+    if (keyboardRow.length === 1) {
+      keyboardList.push([keyboardRow[0]]);
+    }
+
+    // set cache
+    cache.set('state' + fromId, state.admin.UNREVOKE);
+    cache.set('unrevokeUserList' + fromId, revokeList);
+
+    return bot.sendMessage(fromId, response.join('\n'), {
       'disable_web_page_preview': true,
       'parse_mode': 'Markdown',
       'selective': 2,
+      'reply_markup': JSON.stringify({ keyboard: keyboardList, one_time_keyboard: true })
     });
   }
-
-  var keyboardList = [], keyboardRow = [], revokeList = [];
-  var response = ['*Revoked Users:*'];
-  _.forEach(acl.revokedUsers, function(n, key) {
-    revokeList.push({
-      'id': key + 1,
-      'userId': n.id,
-      'keyboardValue': getTelegramName(n)
-    });
-
-    response.push('➸ ' + getTelegramName(n));
-
-    keyboardRow.push(getTelegramName(n));
-    if (keyboardRow.length == 2) {
-      keyboardList.push(keyboardRow);
-      keyboardRow = [];
-    }
-  });
-
-  response.push(i18n.__('selectFromMenu'));
-
-  if (keyboardRow.length === 1) {
-    keyboardList.push([keyboardRow[0]]);
-  }
-
-  // set cache
-  cache.set('state' + fromId, state.admin.UNREVOKE);
-  cache.set('unrevokeUserList' + fromId, revokeList);
-
-  return bot.sendMessage(fromId, response.join('\n'), {
-    'disable_web_page_preview': true,
-    'parse_mode': 'Markdown',
-    'selective': 2,
-    'reply_markup': JSON.stringify({ keyboard: keyboardList, one_time_keyboard: true })
-  });
 });
 
 /*
@@ -367,18 +393,20 @@ bot.onText(/\/unrevoke/, function(msg) {
  */
 bot.onText(/\/clear/, function(msg) {
   var fromId = msg.from.id;
+  
+  if(isAuthorized(fromId)){
+    logger.info('user: %s, message: sent \'/clear\' command', fromId);
+    clearCache(fromId);
+    logger.info('user: %s, message: \'/clear\' command successfully executed', fromId);
 
-  verifyUser(fromId);
-
-  logger.info('user: %s, message: sent \'/clear\' command', fromId);
-  clearCache(fromId);
-  logger.info('user: %s, message: \'/clear\' command successfully executed', fromId);
-
-  return bot.sendMessage(fromId, 'All previously sent commands have been cleared, yey!', {
-    'reply_markup': {
-      'hide_keyboard': true
-    }
-  });
+    return bot.sendMessage(fromId, 'All previously sent commands have been cleared, yey!', {
+      'reply_markup': {
+        'hide_keyboard': true
+      }
+     });
+   } else {
+     return replyWithError(fromId, new Error(i18n.__('notAuthorized')))
+   }
 });
 
 /*
@@ -641,8 +669,8 @@ function sendCommands(fromId) {
   response.push('\n*General commands:*');
   response.push('/start to start this bot');
   response.push('/help to for this list of commands');
-  response.push('`/query [series]` add new TV series');
-  response.push('`/library [series]` search Sonarr library');
+  response.push('/query [series] add new TV series');
+  response.push('/library [series] search Sonarr library');
   response.push('/upcoming shows upcoming episodes');
   response.push('/clear clear all previous commands');
 
@@ -656,5 +684,6 @@ function sendCommands(fromId) {
     response.push('/unrevoke un-revoke user from bot');
   }
 
-  return bot.sendMessage(fromId, response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
+  //return bot.sendMessage(fromId, response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });
+    return bot.sendMessage(fromId, response.join('\n'));
 }

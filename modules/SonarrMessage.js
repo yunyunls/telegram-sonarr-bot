@@ -1,3 +1,5 @@
+/* global __dirname */
+
 'use strict';
 
 var SonarrAPI = require('sonarr-api');
@@ -40,7 +42,7 @@ SonarrMessage.prototype.performLibrarySearch = function(searchText) {
   var query = searchText;
 
   self.sonarr.get('series').then(function(result) {
-    logger.info('user: %s, message: all series', self.username);
+    logger.info(i18n.__('logSonarrAllSeries',self.username));
 
     _.sortBy(result, 'title');
 
@@ -57,19 +59,19 @@ SonarrMessage.prototype.performLibrarySearch = function(searchText) {
     });
 
     if (!response.length) {
-      throw new Error('Unable to locate ' + query + ' in sonarr library');
+      throw new Error(i18n.__('errorSonarrUnableToLocate', query));
     }
 
     response.sort();
 
     if (query) {
       // add title to begining of the array
-      response.unshift('*Found matching results in Sonarr library:*');
+      response.unshift(i18n.__('botChatSonnarMatchingResults'));
     }
 
     if (response.length > 50) {
       var splitReponse = _.chunk(response, 50);
-      splitReponse.sort()
+      splitReponse.sort();
       var i = 0;
       var libraryLoop = setInterval(function () {
         var n = splitReponse[i];
@@ -94,12 +96,12 @@ SonarrMessage.prototype.performLibrarySearch = function(searchText) {
 SonarrMessage.prototype.performRssSync = function() {
   var self = this;
 
-  logger.info('user: %s, message: sent \'/rss\' command', self.username);
+  logger.info(i18n.__('logSonarrRSSCommandSent'));
 
   self.sonarr.post('command', { 'name': 'RssSync' })
   .then(function() {
-    logger.info('user: %s, message: \'/rss\' command successfully executed', self.username);
-    return self._sendMessage('RSS Sync command sent');
+    logger.info('logSonarrRSSCommandExecuted', self.username);
+    return self._sendMessage(i18n.__('botChatSonnarRSSCommandExecuted'));
   })
   .catch(function(error) {
     return self._sendMessage(error);
@@ -109,7 +111,7 @@ SonarrMessage.prototype.performRssSync = function() {
 SonarrMessage.prototype.performWantedSearch = function() {
   var self = this;
 
-  logger.info('user: %s, message: sent \'/wanted\' command', self.username);
+  logger.info(i18n.__('logSonarrWantedCommandSent', self.username));
 
   self.sonarr.get('/wanted/missing', {
     'page': 1,
@@ -130,8 +132,8 @@ SonarrMessage.prototype.performWantedSearch = function() {
       'episodeIds': episodes
     })
     .then(function() {
-      logger.info('user: %s, message: \'/wanted\' command successfully executed', self.username);
-      return self._sendMessage('Wanted command sent.');
+      logger.info(i18n.__('logSonarrWantedCommandExecuted', self.username));
+      return self._sendMessage(i18n.__('botChatSonarrWantedCommandExecuted'));
     })
     .catch(function(error) {
       return self._sendMessage(error);
@@ -145,14 +147,14 @@ SonarrMessage.prototype.performWantedSearch = function() {
 SonarrMessage.prototype.performLibraryRefresh = function() {
   var self = this;
 
-  logger.info('user: %s, message: sent \'/refresh\' command', self.username);
+  logger.info(i18n.__('logSonarrRefreshCommandSent', self.username));
 
   self.sonarr.post('command', {
     'name': 'RefreshSeries'
   })
   .then(function() {
-    logger.info('user: %s, message: \'/refresh\' command successfully executed', self.username);
-    return self._sendMessage('Refresh series command sent.');
+    logger.info(i18n.__('logSonarrRefreshCommandExecuted', self.username));
+    return self._sendMessage(i18n.__('botChatSonarrRefreshCommandExecuted'));
   })
   .catch(function(error) {
     return self._sendMessage(error);
@@ -165,18 +167,18 @@ SonarrMessage.prototype.performCalendarSearch = function(futureDays) {
   var fromDate = moment().toISOString();
   var toDate = moment().add(futureDays, 'day').toISOString();
 
-  logger.info('user: %s, message: sent \'/upcoming\' command from %s to %s', self.username, fromDate, toDate);
+  logger.info(i18n.__('logSonarrUpcomingCommandSent', self.username, fromDate, toDate));
 
   self.sonarr.get('calendar', { 'start': fromDate, 'end': toDate})
   .then(function (episode) {
     if (!episode.length) {
-      throw new Error('Nothing in the calendar for the specified time.');
+      throw new Error(i18n.__('errorSonarrNothingInCalendar'));
     }
 
     var lastDate = null;
     var response = [];
     _.forEach(episode, function(n, key) {
-      var done = (n.hasFile ? ' - *Done*' : '');
+      var done = (n.hasFile ? i18n.__('SonarrDone') : '');
 
       // Add an empty line to break list of multiple days
       if(lastDate != null && n.airDate != lastDate) response.push(' ');
@@ -185,7 +187,7 @@ SonarrMessage.prototype.performCalendarSearch = function(futureDays) {
       lastDate = n.airDate;
     });
 
-    logger.info('#1 user: %s, message: found the following series %s', self.username, response.join(','));
+    logger.info(i18n.__("logSonarrFoundSeries", self.username, response.join(',')));
 
     return self._sendMessage(response.join('\n'), []);
   })
@@ -203,28 +205,28 @@ SonarrMessage.prototype.sendSeriesList = function(seriesName) {
 
   self.test = 'hello';
 
-  logger.info('user: %s, message: sent \'/query\' command', self.username);
+  logger.info(i18n.__('logSonarrQueryCommandSent', self.username));
 
   self.sonarr.get('series/lookup', { 'term': seriesName }).then(function(result) {
     if (!result.length) {
-      throw new Error('could not find ' + seriesName + ', try searching again');
+      throw new Error(i18n.__('errorSonarrSerieNotFound', seriesName));
     }
 
     var series = result;
 
-    logger.info('user: %s, message: requested to search for series "%s"', self.username, seriesName);
+    logger.info(i18n.__('logSonarrUserSerieRequested', self.username, seriesName));
 
     var seriesList = [], keyboardList = [];
 
     series.length = (series.length > config.bot.maxResults ? config.bot.maxResults : series.length);
 
-    var response = ['*Found ' + series.length + ' series *'];
+    var response = [i18n.__('botChatSonarrFoundNSeries', series.length)];
 
     _.forEach(series, function(n, key) {
 
       var imageCover = null;
       _.forEach(n.images, function(image, index){
-        if(image.coverType == 'poster'){
+        if(image.coverType === 'poster'){
           imageCover = image.url;
         }
       });
@@ -251,7 +253,7 @@ SonarrMessage.prototype.sendSeriesList = function(seriesName) {
 
     response.push(i18n.__('selectFromMenu'));
 
-    logger.info('#2 user: %s, message: found the following series %s', self.username, keyboardList.join(','));
+    logger.info(i18n.__("logSonarrFoundSeries2", self.username, keyboardList.join(',')));
 
     // set cache
     self.cache.set('seriesList' + self.user.id, seriesList);
@@ -270,12 +272,12 @@ SonarrMessage.prototype.confirmShowSelect = function(displayName) {
   var seriesList = self.cache.get('seriesList' + self.user.id);
 
   if (!seriesList) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   var series = _.filter(seriesList, function(item) { return item.keyboardValue === displayName; })[0];
   if (!series) {
-    return self._sendMessage(new Error('Could not find the series with title "' + displayName + '"'));
+    return self._sendMessage(new Error(i18n.__('botChatSonarrSerieNotFound', displayName)));
   }
 
   // use workflow to run async tasks
@@ -284,11 +286,11 @@ SonarrMessage.prototype.confirmShowSelect = function(displayName) {
   // check for existing series on sonarr
   workflow.on('checkSonarrSeries', function () {
     self.sonarr.get('series').then(function(result) {
-      logger.info('user: %s, message: looking for existing series', self.username);
+      logger.info(i18n.__('logSonarrLookingForExistingSeries', self.username));
 
       var existingSeries = _.filter(result, function(item) { return item.tvdbId === series.tvdbId; })[0];
       if (existingSeries) {
-        throw new Error('Series already exists and is already being tracked by Sonarr');
+        throw new Error(i18n.__('errorSonarrSerieAlreadyTracked'));
       }
       workflow.emit('confirmShow');
     }).catch(function(error) {
@@ -299,16 +301,16 @@ SonarrMessage.prototype.confirmShowSelect = function(displayName) {
   // check for existing series on sonarr
   workflow.on('confirmShow', function () {
     self.sonarr.get('series').then(function(result) {
-      logger.info('user: %s, message: conform correct show: ' + series.keyboardValue, self.username);
+      logger.info(i18n.__('logSonarrConfirmCorrectShow', series.keyboardValue, self.username));
 
-      var keyboardList = [['Yes'], ['No']];
+      var keyboardList = [[i18n.__('globalYes')], [i18n.__('globalNo')]];
 
       var response = ['*' + series.title + ' (' + series.year + ')*\n'];
 
       response.push(series.plot + '\n');
-      response.push('*Is this show correct?*');
-      response.push('➸ Yes');
-      response.push('➸ No');
+      response.push(i18n.__('botChatSonarrIsShowCorrect'));
+      response.push(i18n.__('globalArrowYes'));
+      response.push(i18n.__('globalArrowNo'));
 
       // Add cover to message (if available)
       if(series.coverUrl !== null){
@@ -338,11 +340,11 @@ SonarrMessage.prototype.sendProfileList = function(displayName) {
   var seriesId = self.cache.get('seriesId' + self.user.id);
 
   if (!seriesId) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   if(displayName == 'No'){
-    return self._sendMessage(new Error('Aborted'));
+    return self._sendMessage(new Error(i18n.__('globalAborted')));
   }
 
   // use workflow to run async tasks
@@ -352,12 +354,12 @@ SonarrMessage.prototype.sendProfileList = function(displayName) {
   workflow.on('getSonarrProfiles', function () {
     self.sonarr.get('profile').then(function(result) {
       if (!result.length) {
-        throw new Error('Could not get profiles, try searching again');
+        throw new Error(i18n.__('errorSonarrCouldntGetProfile'));
       }
 
       var profiles = result;
 
-      logger.info('user: %s, message: requested to get profile list', self.username);
+      logger.info(i18n.__('logSonarrProfileListRequested', self.username));
 
       var profileList = [], keyboardList = [], keyboardRow = [];
       var response = ['*Found ' + profiles.length + ' profiles*'];
@@ -381,7 +383,7 @@ SonarrMessage.prototype.sendProfileList = function(displayName) {
 
       response.push(i18n.__('selectFromMenu'));
 
-      logger.info('#3 user: %s, message: found the following profiles %s', self.username, keyboardList.join(','));
+      logger.info(i18n.__('logSonarrFoundProfile', self.username, keyboardList.join(',')));
 
       // set cache
       self.cache.set('state' + self.user.id, state.sonarr.MONITOR);
@@ -405,19 +407,19 @@ SonarrMessage.prototype.sendMonitorList = function(profileName) {
 
   var profileList = self.cache.get('seriesProfileList' + self.user.id);
   if (!profileList) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   var profile = _.filter(profileList, function(item) { return item.name === profileName; })[0];
   if (!profile) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
-  logger.info('user: %s, message: requested to get monitor list', self.username);
+  logger.info(i18n.__('logSonarrMonitorListRequest', self.username));
 
   var monitor = ['future', 'all', 'none', 'latest', 'first'];
   var monitorList = [], keyboardList = [], keyboardRow = [];
-  var response = ['*Select which seasons to monitor*'];
+  var response = [i18n.__('botChatSonarrSelectSeason')];
   _.forEach(monitor, function(n, key) {
     monitorList.push({ 'type': n });
 
@@ -436,7 +438,7 @@ SonarrMessage.prototype.sendMonitorList = function(profileName) {
 
   response.push(i18n.__('selectFromMenu'));
 
-  logger.info('user: %s, message: found the following monitor types %s', self.username, keyboardList.join(','));
+  logger.info(i18n.__('logSonarrFoundMonitorType', self.username, keyboardList.join(',')));
 
   self.cache.set('seriesProfileId' + self.user.id, profile.profileId);
   self.cache.set('seriesMonitorList' + self.user.id, monitorList);
@@ -450,19 +452,19 @@ SonarrMessage.prototype.sendTypeList = function(monitorName) {
 
   var monitorList = self.cache.get('seriesMonitorList' + self.user.id);
   if (!monitorList) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   var monitor = _.filter(monitorList, function(item) { return item.type === monitorName; })[0];
   if (!monitor) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
-  logger.info('user: %s, message: requested to get series types list', self.username);
+  logger.info(i18n.__('logSonarrUserSeriesTypeRequested', self.username));
 
   var type = ['standard', 'airs daily', 'anime'];
   var typeList = [], keyboardList = [], keyboardRow = [];
-  var response = ['*Select which type of series*'];
+  var response = [i18n.__('selectSeriesType')];
   _.forEach(type, function(n, key) {
     typeList.push({ 'type': n });
 
@@ -481,7 +483,7 @@ SonarrMessage.prototype.sendTypeList = function(monitorName) {
 
   response.push(i18n.__('selectFromMenu'));
 
-  logger.info('user: %s, message: found the following series types %s', self.username, keyboardList.join(','));
+  logger.info(i18n.__('logSonarrFoundSeriesType', self.username, keyboardList.join(',')));
 
   self.cache.set('seriesMonitorId' + self.user.id, monitor.type);
   self.cache.set('seriesTypeList' + self.user.id, typeList);
@@ -495,22 +497,22 @@ SonarrMessage.prototype.sendFolderList = function(typeName) {
 
   var typeList = self.cache.get('seriesTypeList' + self.user.id);
   if (!typeList) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   var type = _.filter(typeList, function(item) { return item.type === typeName; })[0];
   if (!type) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   self.sonarr.get('rootfolder').then(function(result) {
     if (!result.length) {
-      throw new Error('Could not get folders, try searching again');
+      throw new Error(i18n.__("errorSonarrCouldntFindFolders"));
     }
 
     var folders = result;
 
-    logger.info('user: %s, message: requested to get folder list', self.username);
+    logger.info(i18n.__('logSonarrFolderListRequested', self.username));
 
     var folderList = [], keyboardList = [];
     var response = ['*Found ' + folders.length + ' folders*'];
@@ -523,7 +525,7 @@ SonarrMessage.prototype.sendFolderList = function(typeName) {
     });
     response.push(i18n.__('selectFromMenu'));
 
-    logger.info('user: %s, message: found the following folders %s', self.username, keyboardList.join(','));
+    logger.info(i18n.__('logSonarrFoundFolders', self.username, keyboardList.join(',')));
 
     // set cache
     self.cache.set('seriesTypeId' + self.user.id, type.type);
@@ -542,19 +544,19 @@ SonarrMessage.prototype.sendSeasonFolderList = function(folderName) {
 
   var folderList = self.cache.get('seriesFolderList' + self.user.id);
   if (!folderList) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   var folder = _.filter(folderList, function(item) { return item.path === folderName; })[0];
   if (!folder) {
-    return self._sendMessage(new Error('Something went wrong, try searching again'));
+    return self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
-  logger.info('user: %s, message: requested to get season folders list', self.username);
+  logger.info(i18n.__('logSonarrSeasonFoldersListRequested', self.username));
 
-  var seasonFolder = ['yes', 'no'];
+  var seasonFolder = [i18n.__('globalYes'), i18n.__('globalNo')];
   var seasonFolderList = [], keyboardList = [], keyboardRow = [];
-  var response = ['*Would you like to use season folders?*'];
+  var response = [i18n.__('askUsingSeasonFolders')];
   _.forEach(seasonFolder, function(n, key) {
     seasonFolderList.push({ 'type': n });
 
@@ -573,7 +575,7 @@ SonarrMessage.prototype.sendSeasonFolderList = function(folderName) {
 
   response.push(i18n.__('selectFromMenu'));
 
-  logger.info('user: %s, message: found the following seasons folder types %s', self.username, keyboardList.join(','));
+    logger.info(i18n.__('logSonarrFoundSeasonsFolderTypes', self.username, keyboardList.join(',')));
 
   self.cache.set('seriesFolderId' + self.user.id, folder.folderId);
   self.cache.set('seriesSeasonFolderList' + self.user.id, seasonFolderList);
@@ -599,7 +601,7 @@ SonarrMessage.prototype.sendAddSeries = function(seasonFolderName) {
   var seasonFolderList = self.cache.get('seriesSeasonFolderList' + self.user.id);
 
   if (!seasonFolderList) {
-    self._sendMessage(new Error('Something went wrong, try searching again'));
+    self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   var series       = _.filter(seriesList, function(item) { return item.id === seriesId; })[0];
@@ -614,7 +616,7 @@ SonarrMessage.prototype.sendAddSeries = function(seasonFolderName) {
   postOpts.title            = series.title;
   postOpts.titleSlug        = series.titleSlug;
   postOpts.rootFolderPath   = folder.path;
-  postOpts.seasonFolder     = (seasonFolder.type === 'yes' ? true : false);
+  postOpts.seasonFolder     = (seasonFolder.type === i18n.__("globalYes") ? true : false);
   postOpts.monitored        = true;
   postOpts.seriesType       = (type.type === 'airs daily' ? 'daily' : type.type);
   postOpts.qualityProfileId = profile.profileId;
@@ -664,23 +666,23 @@ SonarrMessage.prototype.sendAddSeries = function(seasonFolderName) {
       });
       break;
     default:
-      self._sendMessage(new Error('Something went wrong, try searching again'));
+      self._sendMessage(new Error(i18n.__('errorSonarrWentWrong')));
   }
 
   // update seasons to be monitored
   postOpts.seasons = series.seasons;
 
-  logger.info('user: %s, message: adding series "%s" with options %s', self.username, series.title, JSON.stringify(postOpts));
+  logger.info(i18n.__("logSonarrSerieAddedWithOptions", self.username, series.title, JSON.stringify(postOpts)));
 
   self.sonarr.post('series', postOpts).then(function(result) {
     if (!result) {
-      throw new Error('Could not add series, try searching again.');
+      throw new Error(i18n.__("logSonarrSerieCantAdd"));
     }
 
-    logger.info('user: %s, message: added series "%s"', self.username, series.title);
+    logger.info(i18n.__("logSonarrSerieAdded", self.username, series.title));
 
     if (self._isBotAdmin() && self.adminId !== self.user.id) {
-      self.bot.sendMessage(self.user.id, 'Series "' + series.title + '" added by ' + self.username, {
+      self.bot.sendMessage(self.user.id, i18n.__("botChatSonarrSerieAddedBy", series.title, self.username), {
         'selective': 2,
         'parse_mode': 'Markdown',
         'reply_markup': {
@@ -689,7 +691,7 @@ SonarrMessage.prototype.sendAddSeries = function(seasonFolderName) {
       });
     }
 
-    return self.bot.sendMessage(self.user.id, 'Series "' + series.title + '" added', {
+    return self.bot.sendMessage(self.user.id, i18n.__("botChatSonarrSerieAdded", series.title), {
       'selective': 2,
       'parse_mode': 'Markdown',
       'reply_markup': {
@@ -715,7 +717,7 @@ SonarrMessage.prototype._sendMessage = function(message, keyboard) {
 
   var options;
   if (message instanceof Error) {
-    logger.warn('user: %s message: %s', self.username, message.message);
+    logger.warn(i18n.__("logMessageClear", self.username, message.message));
 
     message = message.message;
     options = {
@@ -746,7 +748,7 @@ SonarrMessage.prototype._isBotAdmin = function() {
 SonarrMessage.prototype._clearCache = function() {
   var self = this;
 
-  logger.info('user: %s, message: %s', self.username, 'clearing series cache');
+  logger.info(i18n.__("logClearCache", self.username));
 
   var cacheItems = [
     'seriesId', 'seriesList', 'seriesProfileId',

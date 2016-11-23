@@ -23,5 +23,9 @@
     "node": ">=0.10"
   },
   "author": "Devin Buhl <devin.kray@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+    "scripts": {
+        "start": "node sonarr.js"
+    }
+
 }

@@ -1,3 +1,5 @@
+/* global __dirname */
+
 'use strict';
 
 var fs          = require('fs');                        // https://nodejs.org/api/fs.html
@@ -8,16 +10,21 @@ var TelegramBot = require('node-telegram-bot-api');     // https://www.npmjs.com
 /*
  * libs
  */
-var state  = require(__dirname + '/lib/state');         // handles command structure
-var logger = require(__dirname + '/lib/logger');        // logs to file and console
 var i18n   = require(__dirname + '/lib/lang');          // set up multilingual support
 var config = require(__dirname + '/lib/config');        // the concised configuration
+var state  = require(__dirname + '/lib/state');         // handles command structure
+var logger = require(__dirname + '/lib/logger');        // logs to file and console
 var acl    = require(__dirname + '/lib/acl');           // set up the acl file
 
 /*
  * modules
  */
 var SonarrMessage = require(__dirname + '/modules/SonarrMessage');
+
+/*
+ * modules
+ */
+i18n.setLocale(config.bot.lang);
 
 /*
  * set up the telegram bot
@@ -33,7 +40,7 @@ var cache = new NodeCache({ stdTTL: 120, checkperiod: 150 });
  * get the bot name
  */
 bot.getMe().then(function(msg) {
-  logger.info('sonarr bot %s initialized', msg.username);
+  logger.info(i18n.__('logBotInitialisation'), msg.username);
 })
 .catch(function(err) {
   throw new Error(err);
@@ -47,7 +54,7 @@ bot.onText(/\/start/, function(msg) {
 
   verifyUser(fromId);
 
-  logger.info('user: %s, message: sent \'/start\' command', fromId);
+  logger.info(i18n.__('logUserStartCommand'), fromId);
   sendCommands(fromId);
 });
 
@@ -59,7 +66,7 @@ bot.onText(/\/help/, function(msg) {
   
   verifyUser(fromId);
 
-  logger.info('user: %s, message: sent \'/help\' command', fromId);
+  logger.info(i18n.__('logUserHelpCommand', fromId));
   sendCommands(fromId);
 });
 
@@ -118,10 +125,8 @@ bot.on('message', function(msg) {
    */
   if (/^\/cid$/g.test(message)) {
     verifyAdmin(user.id);
-    if(isAdmin(user.id)){
-      logger.info('user: %s, message: queried Chat ID %s', user.id, msg.chat.id);
-      return bot.sendMessage(msg.chat.id, 'The current Chat ID: ' + msg.chat.id);
-    }
+    logger.info(i18n.__('logUserCidCommand', user.id, msg.chat.id));
+    return bot.sendMessage(msg.chat.id, i18n.__('botChatCid', msg.chat.id));
   }
 
 
@@ -162,37 +167,37 @@ bot.on('message', function(msg) {
 
   if (currentState === state.sonarr.CONFIRM) {
     verifyUser(user.id);
-    logger.info('user: %s, message: confirm the series %s', user.id, message);
+    logger.info(i18n.__('botChatQuerySeriesConfirm', user.id, message));
     return sonarr.confirmShowSelect(message);
   }
 
   if (currentState === state.sonarr.PROFILE) {
     verifyUser(user.id);
-    logger.info('user: %s, message: choose the series %s', user.id, message);
+    logger.info(i18n.__('botChatQuerySeriesChoose', user.id, message));
     return sonarr.sendProfileList(message);
   }
 
   if (currentState === state.sonarr.MONITOR) {
     verifyUser(user.id);
-    logger.info('user: %s, message: choose the profile "%s"', user.id, message);
+    logger.info(i18n.__('botChatQueryProfileChoose', user.id, message));
     return sonarr.sendMonitorList(message);
   }
 
   if (currentState === state.sonarr.TYPE) {
     verifyUser(user.id);
-    logger.info('user: %s, message: choose the type "%s"', user.id, message);
+    logger.info(i18n.__('botChatQueryTypeChoose', user.id, message));
     return sonarr.sendTypeList(message);
   }
 
   if (currentState === state.sonarr.FOLDER) {
     verifyUser(user.id);
-    logger.info('user: %s, message: choose the folder "%s"', user.id, message);
+    logger.info(i18n.__('botChatQueryFolderChoose', user.id, message));
     return sonarr.sendFolderList(message);
   }
 
   if (currentState === state.sonarr.SEASON_FOLDER) {
     verifyUser(user.id);
-    logger.info('user: %s, message: choose the season folder "%s"', user.id, message);
+    logger.info(i18n.__('botChatQuerySeasonFolderChoose', user.id, message));
     return sonarr.sendSeasonFolderList(message);
   }
 
@@ -213,20 +218,20 @@ bot.onText(/\/auth (.+)/, function(msg, match) {
   var message = [];
 
   if (isAuthorized(fromId)) {
-    message.push('Already authorized.');
-    message.push('Type /start to begin.');
+    message.push(i18n.__('botChatAuthAlreadyAuthorized_1'));
+    message.push(i18n.__('botChatAuthAlreadyAuthorized_2'));
     return bot.sendMessage(fromId, message.join('\n'));
   }
 
   // make sure the user is not banned
   if (isRevoked(fromId)) {
-    message.push('Your access has been revoked and cannot reauthorize.');
-    message.push('Please reach out to the bot owner for support.');
+    message.push(i18n.__('botChatAuthIsRevoked_1'));
+    message.push(i18n.__('botChatAuthIsRevoked_2'));
     return bot.sendMessage(fromId, message.join('\n'));
   }
 
   if (password !== config.bot.password) {
-    return replyWithError(fromId, new Error('Invalid password.'));
+    return replyWithError(fromId, new Error(i18n.__('errorInvalidPassowrd')));
   }
 
   acl.allowedUsers.push(msg.from);
@@ -237,11 +242,11 @@ bot.onText(/\/auth (.+)/, function(msg, match) {
   }
 
   if (config.bot.owner) {
-    bot.sendMessage(config.bot.owner, getTelegramName(msg.from) + ' has been granted access.');
+    bot.sendMessage(config.bot.owner, i18n.__('botChatAuthUserWasGranted', getTelegramName(msg.from)));
   }
 
-  message.push('You have been authorized.');
-  message.push('Type /start to begin.');
+  message.push(i18n.__('botChatAuthGranted_1'));
+  message.push(i18n.__('botChatAuthGranted_2'));
 
   return bot.sendMessage(fromId, message.join('\n'));
 });
@@ -255,10 +260,10 @@ bot.onText(/\/users/, function(msg) {
   verifyAdmin(fromId);
   if(isAdmin(fromId)){
 
-    var response = ['*Allowed Users:*'];
-    _.forEach(acl.allowedUsers, function(n, key) {
-      response.push('➸ ' + getTelegramName(n));
-    });
+  var response = [i18n.__('botChatUsers')];
+  _.forEach(acl.allowedUsers, function(n, key) {
+    response.push('➸ ' + getTelegramName(n));
+  });
 
     return bot.sendMessage(fromId, response.join('\n'));
     //return bot.sendMessage(fromId, response.join('\n'), {
@@ -415,12 +420,12 @@ bot.onText(/\/clear/, function(msg) {
  */
 function handleRevokeUser(userId, revokedUser) {
 
-  logger.info('user: %s, message: selected revoke user %s', userId, revokedUser);
+  logger.info(i18n.__('logRevokeUserSelected',userId, revokedUser));
 
   var keyboardList = [];
-  var response = ['Are you sure you want to revoke access to ' + revokedUser + '?'];
-  keyboardList.push(['NO']);
-  keyboardList.push(['yes']);
+  var response = [i18n.__('botChatRevokeConfirmation', revokedUser)];
+  keyboardList.push([i18n.__('globalNo')]);
+  keyboardList.push([i18n.__('globalYes')]);
 
   // set cache
   cache.set('state' + userId, state.admin.REVOKE_CONFIRM);
@@ -430,7 +435,7 @@ function handleRevokeUser(userId, revokedUser) {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
     'selective': 2,
-    'reply_markup': JSON.stringify({ keyboard: keyboardList, one_time_keyboard: true }),
+    'reply_markup': JSON.stringify({ keyboard: keyboardList, one_time_keyboard: true })
   });
 }
 
@@ -439,19 +444,19 @@ function handleRevokeUser(userId, revokedUser) {
  */
 function handleRevokeUserConfirm(userId, revokedConfirm) {
 
-  logger.info('user: %s, message: selected revoke confirmation %s', userId, revokedConfirm);
+  logger.info(i18n.__('logRevokeConfirmationSelected',userId, revokedConfirm));
 
   var revokedUser = cache.get('revokedUserName' + userId);
   var opts = {};
   var message = '';
 
-  if (revokedConfirm === 'NO' || revokedConfirm === 'no') {
+  if (revokedConfirm === i18n.__('globalNo')) {
       clearCache(userId);
-      message = 'Access for ' + revokedUser + ' has *NOT* been revoked.';
+      message = i18n.__('botChatRevokeFailed',revokedUser);
       return bot.sendMessage(userId, message, {
         'disable_web_page_preview': true,
          'parse_mode': 'Markdown',
-        'selective': 2,
+        'selective': 2
       });
   }
 
@@ -464,7 +469,7 @@ function handleRevokeUserConfirm(userId, revokedConfirm) {
   acl.allowedUsers.splice(j, 1);
   updateACL();
 
-  message = 'Access for ' + revokedUser + ' has been revoked.';
+  message = i18n.__('botChatRevokeSuccess',revokedUser);
 
   return bot.sendMessage(userId, message, {
     'disable_web_page_preview': true,
@@ -478,16 +483,16 @@ function handleRevokeUserConfirm(userId, revokedConfirm) {
  */
 function handleUnRevokeUser(userId, revokedUser) {
 
-  var keyboardList = [];
-  var response = ['Are you sure you want to unrevoke access for ' + revokedUser + '?'];
-  keyboardList.push(['NO']);
-  keyboardList.push(['yes']);
+  logger.info(i18n.__('logUnrevokeUserSelected',userId, revokedUser));
 
+  var keyboardList = [];
+  var response = [i18n.__('botChatUnrevokeConfirmation', revokedUser)];
+  keyboardList.push([i18n.__('globalNo')]);
+  keyboardList.push([i18n.__('globalYes')]);
+  
   // set cache
   cache.set('state' + userId, state.admin.UNREVOKE_CONFIRM);
   cache.set('revokedUserName' + userId, revokedUser);
-
-  logger.info('user: %s, message: selected unrevoke user %s', userId, revokedUser);
 
   var keyboard = {
     keyboard: keyboardList,
@@ -507,18 +512,18 @@ function handleUnRevokeUser(userId, revokedUser) {
  */
 function handleUnRevokeUserConfirm(userId, revokedConfirm) {
 
-  logger.info('user: %s, message: selected unrevoke confirmation %s', userId, revokedConfirm);
+  logger.info(i18n.__('logUnrevokeConfirmationSelected',userId, revokedConfirm));
 
   var revokedUser = cache.get('revokedUserName' + userId);
   var opts = {};
   var message = '';
-  if (revokedConfirm === 'NO' || revokedConfirm === 'no') {
+  if (revokedConfirm === i18n.__('globalNo')) {
       clearCache(userId);
-      message = 'Access for ' + revokedUser + ' has *NOT* been unrevoked.';
+      message = i18n.__('botChatRevokeFailed',revokedUser);
       return bot.sendMessage(userId, message, {
         'disable_web_page_preview': true,
         'parse_mode': 'Markdown',
-        'selective': 2,
+        'selective': 2
       });
   }
 
@@ -529,12 +534,12 @@ function handleUnRevokeUserConfirm(userId, revokedConfirm) {
   acl.revokedUsers.splice(j, 1);
   updateACL();
 
-  message = 'Access for ' + revokedUser + ' has been unrevoked.';
+  message = i18n.__('botChatRevokeSuccess',revokedUser);
 
   return bot.sendMessage(userId, message, {
     'disable_web_page_preview': true,
     'parse_mode': 'Markdown',
-    'selective': 2,
+    'selective': 2
   });
 }
 
@@ -547,7 +552,7 @@ function updateACL() {
       throw new Error(err);
     }
 
-    logger.info('the access control list was updated');
+    logger.info(i18n.__('logAclUpdated'));
   });
 }
 
@@ -604,9 +609,9 @@ function isRevoked(userId) {
  */
 function promptOwnerConfig(userId) {
   if (!config.bot.owner) {
-    var message = ['Your User ID: ' + userId];
-    message.push('Please add your User ID to the config file field labeled \'owner\'.');
-    message.push('Please restart the bot once this has been updated.');
+    var message = [i18n.__('botChatWarningOwner_1', userId)];
+    message.push(i18n.__('botChatWarningOwner_2'));
+    message.push(i18n.__('botChatWarningOwner_3'));
     return bot.sendMessage(userId, message.join('\n'));
   }
 }
@@ -615,8 +620,8 @@ function promptOwnerConfig(userId) {
  * handle removing the custom keyboard
  */
 function replyWithError(userId, err) {
-  logger.warn('user: %s message: %s', userId, err.message);
-  return bot.sendMessage(userId, '*Oh no!* ' + err, {
+  logger.warn(i18n.__('logWarnError', userId, err.message));
+  return bot.sendMessage(userId, i18n.__('botChatErrorFormat', err), {
     'parse_mode': 'Markdown',
     'reply_markup': {
       'hide_keyboard': true
@@ -657,7 +662,7 @@ function getTelegramName(user) {
     lastname = (aclUser.last_name !== undefined) ? ' ' + aclUser.last_name : '';
     return aclUser.username || (aclUser.first_name + lastname);
   }
-  return 'unknown user';
+  return i18n.__('globalUnknowUser');
 }
 
 /*
@@ -665,23 +670,23 @@ function getTelegramName(user) {
  */
 function sendCommands(fromId) {
   var response = ['Hello ' + getTelegramName(fromId) + '!'];
-  response.push('Below is a list of commands you have access to:');
-  response.push('\n*General commands:*');
-  response.push('/start to start this bot');
-  response.push('/help to for this list of commands');
-  response.push('/query [series] add new TV series');
-  response.push('/library [series] search Sonarr library');
-  response.push('/upcoming shows upcoming episodes');
-  response.push('/clear clear all previous commands');
+  response.push(i18n.__('botChatHelp_1'));
+  response.push(i18n.__('botChatHelp_2'));
+  response.push(i18n.__('botChatHelp_3'));
+  response.push(i18n.__('botChatHelp_4'));
+  response.push(i18n.__('botChatHelp_5'));
+  response.push(i18n.__('botChatHelp_6'));
+  response.push(i18n.__('botChatHelp_7'));
+  response.push(i18n.__('botChatHelp_8'));
 
   if (isAdmin(fromId)) {
-    response.push('\n*Admin commands:*');
-    response.push('/wanted search all missing/wanted episodes');
-    response.push('/rss perform an RSS Sync');
-    response.push('/refresh refreshes all series');
-    response.push('/users list users');
-    response.push('/revoke revoke user from bot');
-    response.push('/unrevoke un-revoke user from bot');
+    response.push(i18n.__('botChatHelp_9'));
+    response.push(i18n.__('botChatHelp_10'));
+    response.push(i18n.__('botChatHelp_11'));
+    response.push(i18n.__('botChatHelp_12'));
+    response.push(i18n.__('botChatHelp_13'));
+    response.push(i18n.__('botChatHelp_14'));
+    response.push(i18n.__('botChatHelp_15'));
   }
 
   //return bot.sendMessage(fromId, response.join('\n'), { 'parse_mode': 'Markdown', 'selective': 2 });

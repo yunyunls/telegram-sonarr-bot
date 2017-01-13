@@ -1,10 +1,10 @@
+**Unfortunately I don't use Telegram anymore and won't be providing updates for this, however, I'll still accept PRs.**
+
 # telegram-sonarr-bot
 
 Bot which lets you or others add series to [Sonarr](https://sonarr.tv/) via the messaging service [Telegram](https://telegram.org/).
 
 Contact [@BotFather](http://telegram.me/BotFather) on Telegram to create and get a bot token.
-
-Unfortunately I don't use Telegram anymore and won't be providing updates for this, however, I'll still accept PRs.
 
 Getting Started
 ---------------
